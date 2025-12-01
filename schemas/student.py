@@ -48,7 +48,7 @@ class StudentCreate(BaseModel):
     
     password: str = Field(
         ...,
-        min_length=8,
+        min_length=4,
         description="Contraseña (será hasheada antes de guardar)"
     )
     
