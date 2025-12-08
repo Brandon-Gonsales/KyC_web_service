@@ -25,7 +25,7 @@ class UserCreate(BaseModel):
     """
     username: str = Field(..., min_length=3, description="Nombre de usuario único")
     email: EmailStr = Field(..., description="Correo electrónico único")
-    password: str = Field(..., min_length=8, description="Contraseña (será hasheada)")
+    password: str = Field(..., min_length=5, description="Contraseña (será hasheada)")
     rol: UserRole = Field(default=UserRole.ADMIN, description="Rol de usuario")
     
     model_config = {
@@ -81,7 +81,7 @@ class UserUpdate(BaseModel):
     """
     username: Optional[str] = Field(None, min_length=3)
     email: Optional[EmailStr] = None
-    password: Optional[str] = Field(None, min_length=8)
+    password: Optional[str] = Field(None, min_length=5)
     rol: Optional[UserRole] = None
     activo: Optional[bool] = None
     

@@ -5,7 +5,7 @@ Servicio de Estudiantes
 Lógica de negocio para estudiantes (Funciones).
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union
 from models.student import Student
 from schemas.student import StudentCreate, StudentUpdateSelf, StudentUpdateAdmin
 from beanie import PydanticObjectId
@@ -25,17 +25,57 @@ async def create_student(student_in: StudentCreate) -> Student:
     """
     Crear nuevo estudiante
     
-    La contraseña se hashea automáticamente antes de guardar.
+    La contraseña será el carnet (hasheado automáticamente).
+    El estudiante puede cambiar su contraseña después.
     """
     from core.security import get_password_hash
     
-    student_data = student_in.model_dump()
-    student_data["password"] = get_password_hash(student_data["password"])
+    student_data = student_in.model_dump(exclude_unset=True)
+    
+    # Usar el carnet como contraseña inicial
+    student_data["password"] = get_password_hash(student_data["carnet"])
     
     student = Student(**student_data)
     await student.insert()
     return student
 
+
+async def update_student(
+    student: Student,
+    student_in: Union[StudentUpdateSelf, StudentUpdateAdmin]
+) -> Student:
+    """
+    Actualizar estudiante existente
+    
+    Args:
+        student: Estudiante a actualizar
+        student_in: Datos de actualización (StudentUpdateSelf o StudentUpdateAdmin)
+    
+    Returns:
+        Estudiante actualizado
+    
+    Nota:
+        - Solo actualiza campos que fueron enviados (exclude_unset=True)
+        - Si se actualiza password, se hashea automáticamente
+        - StudentUpdateSelf permite menos campos que StudentUpdateAdmin
+    """
+    from core.security import get_password_hash
+    
+    # Obtener solo los campos que fueron enviados (no None por defecto)
+    update_data = student_in.model_dump(exclude_unset=True)
+    
+    # Si se está actualizando la contraseña, hashearla
+    if "password" in update_data and update_data["password"]:
+        update_data["password"] = get_password_hash(update_data["password"])
+    
+    # Actualizar los campos del estudiante
+    for field, value in update_data.items():
+        setattr(student, field, value)
+    
+    # Guardar cambios
+    await student.save()
+    
+    return student
 
 
 

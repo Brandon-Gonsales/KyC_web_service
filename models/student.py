@@ -90,21 +90,22 @@ class Student(MongoBaseModel):
     
     registro: str = Field(...,description="Número de registro único del estudiante (usado como username)")
     password: str = Field(...,description="Contraseña hasheada con bcrypt (NUNCA almacenar en texto plano)")
-    nombre: str = Field(...,min_length=1,max_length=200,description="Nombre completo del estudiante")
-    email: EmailStr = Field(...,description="Correo electrónico (validado automáticamente por Pydantic)")
+    nombre: Optional[str] = Field(None,min_length=1,max_length=200,description="Nombre completo del estudiante")
+    email: Optional[EmailStr] = Field(None,description="Correo electrónico (validado automáticamente por Pydantic)")
     carnet: Optional[str] = Field(None,description="Carnet de identidad")
     extension: Optional[str] = Field(None,description="Extension del carnet de identidad")
-    celular: str = Field(...,description="Número de celular para notificaciones")
+    celular: Optional[str] = Field(None,description="Número de celular para notificaciones")
     domicilio: Optional[str] = Field(None,description="Dirección física del estudiante (requerido para certificados)")
-    fecha_nacimiento: datetime = Field(...,description="Fecha de nacimiento (requerido para certificados y títulos)")
+    fecha_nacimiento: Optional[datetime] = Field(None,description="Fecha de nacimiento (requerido para certificados y títulos)")
     foto_url: Optional[str] = Field(None,description="URL de la foto de perfil del estudiante")
-    es_estudiante_interno: TipoEstudiante = Field(...,description=("Tipo de estudiante: INTERNO (de la universidad) o EXTERNO (público general). "))
+    es_estudiante_interno: Optional[TipoEstudiante] = Field(None,description=("Tipo de estudiante: INTERNO (de la universidad) o EXTERNO (público general). "))
     activo: bool = Field(default=True,description="Si el estudiante puede acceder al sistema y realizar acciones")
     lista_cursos_ids: List[PyObjectId] = Field(default_factory=list,description="Lista de IDs de cursos en los que el estudiante está inscrito")
     titulo: Optional[Title] = Field(None, description="Título obtenido por el estudiante (Embebido)")
     ci_url: Optional[str] = Field(None,description="URL del PDF del carnet de identidad")
     afiliacion_url: Optional[str] = Field(None,description="URL del PDF de afiliacion a colegio profesional para descuentos")
     cv_url: Optional[str] = Field(None,description="URL del PDF de currículum vitae")
+
     
     class Settings:
         name = "students"

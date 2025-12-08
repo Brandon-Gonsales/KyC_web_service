@@ -2,7 +2,7 @@ from typing import List, Any, Union, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, Form
 from models.student import Student
 from models.user import User
-from schemas.student import StudentCreate, StudentResponse, StudentUpdateSelf, StudentUpdateAdmin
+from schemas.student import StudentCreate, StudentResponse, StudentUpdateSelf, StudentUpdateAdmin, ChangePassword
 from services import student_service
 from beanie import PydanticObjectId
 from api.dependencies import require_admin, get_current_user
@@ -75,7 +75,6 @@ async def update_student_self(
     Requiere: Autenticación como STUDENT
     
     El estudiante solo puede actualizar:
-    - password (contraseña)
     - celular (número de teléfono)
     - domicilio (dirección)
     
@@ -85,7 +84,7 @@ async def update_student_self(
     - POST /students/me/upload/carnet
     - POST /students/me/upload/afiliacion
     
-    NO puede cambiar: nombre, email, registro, activo, tipo de estudiante, etc.
+    NO puede cambiar: nombre, email, registro, activo, tipo de estudiante, password, etc.
     """
     # Verificar que sea un estudiante
     if not isinstance(current_user, Student):
@@ -97,6 +96,45 @@ async def update_student_self(
     # Actualizar el perfil del estudiante autenticado
     student = await student_service.update_student(student=current_user, student_in=student_in)
     return student
+
+
+@router.post("/me/change-password", response_model=StudentResponse)
+async def change_password(
+    *,
+    password_data: ChangePassword,
+    current_user: Student = Depends(get_current_user)
+) -> Any:
+    """
+    Cambiar contraseña del estudiante autenticado (seguro).
+    
+    Requiere: Autenticación como STUDENT
+    
+    Seguridad:
+    - Verifica la contraseña actual
+    - Requiere confirmar la nueva contraseña (2 veces)
+    - Mínimo 5 caracteres para la nueva contraseña
+    
+    Proceso:
+    1. El estudiante envía su contraseña actual
+    2. El sistema verifica que sea correcta
+    3. El estudiante envía la nueva contraseña 2 veces
+    4. El sistema valida que coincidan
+    5. Se actualiza la contraseña (hasheada)
+    """
+    from core.security import verify_password, get_password_hash
+     
+    # Verificar que la contraseña actual sea correcta
+    if not verify_password(password_data.current_password, current_user.password):
+        raise HTTPException(
+            status_code=400,
+            detail="La contraseña actual es incorrecta"
+        )
+    
+    # Actualizar la contraseña (ya viene validada que new_password == confirm_password)
+    current_user.password = get_password_hash(password_data.new_password)
+    await current_user.save()
+    
+    return current_user
 
 
 @router.put("/{id}", response_model=StudentResponse)

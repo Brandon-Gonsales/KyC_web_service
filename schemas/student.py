@@ -14,10 +14,41 @@ Schemas incluidos:
 
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, field_validator
 from models.enums import TipoEstudiante
 from models.base import PyObjectId
 from models.title import Title
+
+
+class ChangePassword(BaseModel):
+    """
+    Schema para cambiar contraseña de forma segura
+    
+    Requiere:
+    - Contraseña actual (para verificación)
+    - Nueva contraseña (2 veces para confirmación)
+    """
+    
+    current_password: str = Field(..., description="Contraseña actual")
+    new_password: str = Field(..., min_length=5, description="Nueva contraseña (mínimo 5 caracteres)")
+    confirm_password: str = Field(..., min_length=5, description="Confirmar nueva contraseña")
+    
+    @field_validator('confirm_password')
+    @classmethod
+    def passwords_match(cls, v, info):
+        """Validar que las contraseñas nuevas coincidan"""
+        if 'new_password' in info.data and v != info.data['new_password']:
+            raise ValueError('Las contraseñas nuevas no coinciden')
+        return v
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "current_password": "12345678",
+                "new_password": "NuevaPassword123",
+                "confirm_password": "NuevaPassword123"
+            }
+        }
 
 
 class StudentCreate(BaseModel):
@@ -26,29 +57,30 @@ class StudentCreate(BaseModel):
     
     Uso: POST /students/
     
-    Solo incluye los campos esenciales para el registro inicial.
-    Los demás campos pueden ser actualizados posteriormente.
+    El carnet se usará como contraseña inicial (será hasheada automáticamente).
+    Solo registro y carnet son obligatorios.
     """
     
+    # Campos obligatorios
     registro: str = Field(..., description="Número de registro único del estudiante (usado como username)")
-    password: str = Field(..., min_length=4, description="Contraseña (será hasheada antes de guardar)")
-    nombre: str = Field(..., min_length=1, max_length=200, description="Nombre completo del estudiante")
-    email: EmailStr = Field(..., description="Correo electrónico")
-    carnet: str = Field(..., description="Carnet de identidad")
+    carnet: str = Field(..., description="Carnet de identidad (será usado como contraseña inicial y almacenado)")
+    
+    # Campos opcionales
+    nombre: Optional[str] = Field(None, min_length=1, max_length=200, description="Nombre completo del estudiante")
+    email: Optional[EmailStr] = Field(None, description="Correo electrónico")
     extension: Optional[str] = Field(None, description="Extension del carnet de identidad")
-    celular: str = Field(..., description="Número de celular para notificaciones")
+    celular: Optional[str] = Field(None, description="Número de celular para notificaciones")
     domicilio: Optional[str] = Field(None, description="Dirección física del estudiante")
-    fecha_nacimiento: datetime = Field(..., description="Fecha de nacimiento")
-    es_estudiante_interno: TipoEstudiante = Field(..., description="Tipo de estudiante: INTERNO o EXTERNO")
+    fecha_nacimiento: Optional[datetime] = Field(None, description="Fecha de nacimiento")
+    es_estudiante_interno: Optional[TipoEstudiante] = Field(None, description="Tipo de estudiante: INTERNO o EXTERNO")
 
     class Config:
         schema_extra = {
             "example": {
                 "registro": "220005958",
-                "password": "KyC123",
+                "carnet": "12345678",
                 "nombre": "Brandon Gonsales Coronado",
                 "email": "bgonsalescoronado@gmail.com",
-                "carnet": "12345678",
                 "extension": "SC",
                 "celular": "60984296",
                 "domicilio": "Av. Internacional #13, Santa Cruz, Bolivia",
@@ -58,6 +90,7 @@ class StudentCreate(BaseModel):
         }
 
 
+
 class StudentResponse(BaseModel):
     """
     Schema para mostrar información de un estudiante
@@ -65,15 +98,15 @@ class StudentResponse(BaseModel):
     
     id: PyObjectId = Field(..., alias="_id")
     registro: str
-    nombre: str
-    email: EmailStr
+    nombre: Optional[str] = None
+    email: Optional[EmailStr] = None
     carnet: Optional[str] = None
     extension: Optional[str] = None
-    celular: str
+    celular: Optional[str] = None
     domicilio: Optional[str] = None
-    fecha_nacimiento: datetime
+    fecha_nacimiento: Optional[datetime] = None
     foto_url: Optional[str] = None
-    es_estudiante_interno: TipoEstudiante
+    es_estudiante_interno: Optional[TipoEstudiante] = None
     
     # Documentos
     ci_url: Optional[str] = None
@@ -111,16 +144,20 @@ class StudentResponse(BaseModel):
                     "numero_titulo": "123456",
                     "año_expedicion": "2020",
                     "universidad": "Universidad Mayor de San Andrés",
-                    "titulo_url": "https://storage.example.com/titulos/brandon.pdf"
+                    "titulo_url": "https://storage.example.com/titulos/brandon.pdf",
+                    "estado": "verificado",
+                    "verificado_por": "admin",
+                    "fecha_verificacion": "2024-12-08T17:00:00"
                 },
                 "ci_url": "https://storage.example.com/docs/ci_brandon.pdf",
                 "afiliacion_url": "https://storage.example.com/docs/afiliacion_brandon.pdf",
                 "cv_url": "https://storage.example.com/docs/cv_brandon.pdf",
-                "created_at": "2024-01-15T10:30:00",
-                "updated_at": "2024-01-15T10:30:00"
+                "created_at": "2024-03-20T10:00:00",
+                "updated_at": "2024-03-20T10:00:00"
             }
         }
     }
+
 
 
 class StudentUpdateSelf(BaseModel):
@@ -136,20 +173,21 @@ class StudentUpdateSelf(BaseModel):
     - POST /students/me/upload/cv
     - POST /students/me/upload/carnet
     - POST /students/me/upload/afiliacion
+    
+    Nota: No se permite cambiar la contraseña desde este endpoint.
     """
     
-    password: Optional[str] = Field(None, min_length=8)
     celular: Optional[str] = None
     domicilio: Optional[str] = None
     
     class Config:
         schema_extra = {
             "example": {
-                "password": "NuevaPassword123",
                 "celular": "71234567",
                 "domicilio": "Nueva Dirección #456, La Paz, Bolivia"
             }
         }
+
 
 
 class StudentUpdateAdmin(BaseModel):
@@ -168,7 +206,7 @@ class StudentUpdateAdmin(BaseModel):
     - POST /students/{id}/upload/titulo (solo admins)
     """
     registro: Optional[str] = None
-    password: Optional[str] = Field(None, min_length=8)
+    password: Optional[str] = Field(None, min_length=5)
     nombre: Optional[str] = Field(None, min_length=1, max_length=200)
     email: Optional[EmailStr] = None
     carnet: Optional[str] = None
@@ -185,6 +223,7 @@ class StudentUpdateAdmin(BaseModel):
         schema_extra = {
             "example": {
                 "registro": "220005959",
+                "password": "NuevaPassword123",
                 "nombre": "Juan Carlos Pérez",
                 "email": "juan.perez@example.com",
                 "carnet": "87654321",
@@ -200,7 +239,12 @@ class StudentUpdateAdmin(BaseModel):
                     "numero_titulo": "123456",
                     "año_expedicion": "2020",
                     "universidad": "Universidad Mayor de San Andrés",
-                    "titulo_url": "https://storage.example.com/titulos/juan.pdf"
+                    "titulo_url": "https://storage.example.com/titulos/juan.pdf",
+                    "estado": "verificado",
+                    "verificado_por": "admin",
+                    "fecha_verificacion": "2024-12-08T17:00:00",
+                    "motivo_rechazo": None
                 }
             }
         }
+

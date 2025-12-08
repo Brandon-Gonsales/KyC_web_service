@@ -30,7 +30,8 @@ from .student import (
     StudentCreate,
     StudentResponse,
     StudentUpdateSelf,
-    StudentUpdateAdmin
+    StudentUpdateAdmin,
+    ChangePassword
 )
 
 # Course schemas
@@ -76,6 +77,7 @@ __all__ = [
     "StudentResponse",
     "StudentUpdateSelf",
     "StudentUpdateAdmin",
+    "ChangePassword",
     # Course
     "CourseCreate",
     "CourseResponse",
