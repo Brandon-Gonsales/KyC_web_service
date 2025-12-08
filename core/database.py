@@ -16,7 +16,6 @@ from models.course import Course
 from models.enrollment import Enrollment
 from models.payment import Payment
 from models.discount import Discount
-from models.title import Title
 
 async def init_db():
     """
@@ -39,7 +38,6 @@ async def init_db():
             Enrollment,
             Payment,
             Discount,
-            Title,
         ]
     )
     print(f"✅ Conectado a MongoDB ({settings.DATABASE_NAME}) y Beanie inicializado.")

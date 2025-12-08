@@ -1,5 +1,5 @@
-from typing import List, Any, Union
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from typing import List, Any, Union, Optional
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, Form
 from models.student import Student
 from models.user import User
 from schemas.student import StudentCreate, StudentResponse, StudentUpdateSelf, StudentUpdateAdmin
@@ -63,37 +63,71 @@ async def read_student(
     
     return student
 
-@router.put("/{id}", response_model=StudentResponse)
-async def update_student(
+@router.put("/me", response_model=StudentResponse)
+async def update_student_self(
     *,
-    id: PydanticObjectId,
-    student_in: Union[StudentUpdateSelf, StudentUpdateAdmin],
-    current_user: Union[User, Student] = Depends(get_current_user)
+    student_in: StudentUpdateSelf,
+    current_user: Student = Depends(get_current_user)
 ) -> Any:
     """
-    Actualizar estudiante.
+    Actualizar el perfil del estudiante autenticado.
     
-    Requiere: Autenticación
-    - ADMIN/SUPERADMIN: Pueden actualizar cualquier estudiante (StudentUpdateAdmin)
-    - STUDENT: Solo puede actualizar su propio perfil (StudentUpdateSelf)
+    Requiere: Autenticación como STUDENT
+    
+    El estudiante solo puede actualizar:
+    - password (contraseña)
+    - celular (número de teléfono)
+    - domicilio (dirección)
+    
+    Para subir archivos (CV, foto, carnet, etc.), usar los endpoints:
+    - POST /students/me/upload/photo
+    - POST /students/me/upload/cv
+    - POST /students/me/upload/carnet
+    - POST /students/me/upload/afiliacion
+    
+    NO puede cambiar: nombre, email, registro, activo, tipo de estudiante, etc.
+    """
+    # Verificar que sea un estudiante
+    if not isinstance(current_user, Student):
+        raise HTTPException(
+            status_code=403,
+            detail="Este endpoint es solo para estudiantes. Los admins deben usar PUT /students/{id}"
+        )
+    
+    # Actualizar el perfil del estudiante autenticado
+    student = await student_service.update_student(student=current_user, student_in=student_in)
+    return student
+
+
+@router.put("/{id}", response_model=StudentResponse)
+async def update_student_admin(
+    *,
+    id: PydanticObjectId,
+    student_in: StudentUpdateAdmin,
+    current_user: User = Depends(require_admin)
+) -> Any:
+    """
+    Actualizar cualquier estudiante (solo admins).
+    
+    Requiere: ADMIN o SUPERADMIN
+    
+    Los administradores pueden actualizar:
+    - Datos personales (nombre, email, carnet, extensión, etc.)
+    - Tipo de estudiante (interno/externo)
+    - Estado (activo/inactivo)
+    - Cursos inscritos
+    - Título profesional (datos del título)
+    
+    Para subir archivos, usar los endpoints dedicados:
+    - POST /students/{id}/upload/photo
+    - POST /students/{id}/upload/cv
+    - POST /students/{id}/upload/carnet
+    - POST /students/{id}/upload/afiliacion
+    - POST /students/{id}/upload/titulo (solo admins)
     """
     student = await student_service.get_student(id=id)
     if not student:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
-    
-    # Si es estudiante, solo puede actualizar su propio perfil
-    if isinstance(current_user, Student):
-        if current_user.id != id:
-            raise HTTPException(
-                status_code=403,
-                detail="No tienes permiso para actualizar este estudiante"
-            )
-        # Validar que el estudiante use StudentUpdateSelf
-        if not isinstance(student_in, StudentUpdateSelf):
-            raise HTTPException(
-                status_code=403,
-                detail="Los estudiantes solo pueden usar StudentUpdateSelf"
-            )
     
     student = await student_service.update_student(student=student, student_in=student_in)
     return student
@@ -203,9 +237,10 @@ async def upload_student_cv(
     
     # Subir PDF a Cloudinary
     folder = f"students/{id}/documents"
-    public_id = f"cv_{id}"
-    display_name = f"CV_{student.nombre.replace(' ', '_')}.pdf"
-    cv_url = await upload_pdf(file, folder, public_id, display_name)
+    # Usar nombre descriptivo como public_id
+    safe_name = student.nombre.replace(' ', '_').replace('/', '_')
+    public_id = f"CV_{safe_name}"
+    cv_url = await upload_pdf(file, folder, public_id)
     
     # Actualizar URL en el estudiante
     student.cv_url = cv_url
@@ -246,9 +281,10 @@ async def upload_student_carnet(
     
     # Subir PDF a Cloudinary
     folder = f"students/{id}/documents"
-    public_id = f"carnet_{id}"
-    display_name = f"Carnet_{student.nombre.replace(' ', '_')}.pdf"
-    ci_url = await upload_pdf(file, folder, public_id, display_name)
+    # Usar nombre descriptivo como public_id
+    safe_name = student.nombre.replace(' ', '_').replace('/', '_')
+    public_id = f"Carnet_{safe_name}"
+    ci_url = await upload_pdf(file, folder, public_id)
     
     # Actualizar URL en el estudiante
     student.ci_url = ci_url
@@ -289,9 +325,10 @@ async def upload_student_afiliacion(
     
     # Subir PDF a Cloudinary
     folder = f"students/{id}/documents"
-    public_id = f"afiliacion_{id}"
-    display_name = f"Afiliacion_{student.nombre.replace(' ', '_')}.pdf"
-    afiliacion_url = await upload_pdf(file, folder, public_id, display_name)
+    # Usar nombre descriptivo como public_id
+    safe_name = student.nombre.replace(' ', '_').replace('/', '_')
+    public_id = f"Afiliacion_{safe_name}"
+    afiliacion_url = await upload_pdf(file, folder, public_id)
     
     # Actualizar URL en el estudiante
     student.afiliacion_url = afiliacion_url
@@ -305,44 +342,175 @@ async def upload_student_titulo(
     *,
     id: PydanticObjectId,
     file: UploadFile,
-    current_user: User = Depends(require_admin)
+    titulo: str = Form(...),
+    numero_titulo: str = Form(...),
+    año_expedicion: str = Form(...),
+    universidad: str = Form(...),
+    current_user: Union[User, Student] = Depends(get_current_user)
 ) -> Any:
     """
     Subir título profesional del estudiante
     
-    Requiere: ADMIN o SUPERADMIN
+    Requiere: Autenticación
+    - STUDENT: Puede subir su propio título (queda PENDIENTE de validación)
+    - ADMIN: Puede subir título a cualquier estudiante (queda VERIFICADO automáticamente)
     
-    Solo administradores pueden subir títulos (documentos oficiales)
+    El estudiante debe proporcionar:
+    - file: PDF del título
+    - titulo: Nombre del título (ej: "Licenciatura en Ingeniería")
+    - numero_titulo: Número del título
+    - año_expedicion: Año de expedición
+    - universidad: Universidad emisora
     
     Formato: PDF
     Tamaño máximo: 10MB
     """
     from core.cloudinary_utils import upload_pdf
     from models.title import Title
+    from models.enums import EstadoTitulo
+    from datetime import datetime
     
     student = await student_service.get_student(id=id)
     if not student:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
     
+    # Verificar permisos
+    is_admin = isinstance(current_user, User)
+    is_own_student = isinstance(current_user, Student) and current_user.id == id
+    
+    if not is_admin and not is_own_student:
+        raise HTTPException(
+            status_code=403,
+            detail="No tienes permiso para subir título a este estudiante"
+        )
+    
     # Subir PDF a Cloudinary
     folder = f"students/{id}/documents"
-    public_id = f"titulo_{id}"
-    display_name = f"Titulo_{student.nombre.replace(' ', '_')}.pdf"
-    titulo_url = await upload_pdf(file, folder, public_id, display_name)
+    safe_name = student.nombre.replace(' ', '_').replace('/', '_')
+    public_id = f"Titulo_{safe_name}"
+    titulo_url = await upload_pdf(file, folder, public_id)
     
-    # Si no tiene título, crear uno nuevo
-    if not student.titulo:
+    # Crear objeto Title con estado según quién lo sube
+    if is_admin:
+        # Admin sube → VERIFICADO automáticamente
         student.titulo = Title(
-            titulo="Título pendiente de actualizar",
-            numero_titulo="",
-            año_expedicion="",
-            universidad="",
-            titulo_url=titulo_url
+            titulo=titulo,
+            numero_titulo=numero_titulo,
+            año_expedicion=año_expedicion,
+            universidad=universidad,
+            titulo_url=titulo_url,
+            estado=EstadoTitulo.VERIFICADO,
+            verificado_por=current_user.username,
+            fecha_verificacion=datetime.utcnow()
         )
     else:
-        # Actualizar URL del título existente
-        student.titulo.titulo_url = titulo_url
+        # Estudiante sube → PENDIENTE de validación
+        student.titulo = Title(
+            titulo=titulo,
+            numero_titulo=numero_titulo,
+            año_expedicion=año_expedicion,
+            universidad=universidad,
+            titulo_url=titulo_url,
+            estado=EstadoTitulo.PENDIENTE
+        )
     
     await student.save()
+    return student
+
+
+@router.put("/{id}/titulo/verificar", response_model=StudentResponse)
+async def verificar_titulo(
+    *,
+    id: PydanticObjectId,
+    titulo: Optional[str] = Form(None),
+    numero_titulo: Optional[str] = Form(None),
+    año_expedicion: Optional[str] = Form(None),
+    universidad: Optional[str] = Form(None),
+    current_user: User = Depends(require_admin)
+) -> Any:
+    """
+    Verificar y aprobar el título de un estudiante
     
+    Requiere: ADMIN o SUPERADMIN
+    
+    El admin puede:
+    - Aprobar el título tal como está (sin enviar datos)
+    - Corregir datos antes de aprobar (enviar datos corregidos)
+    
+    Parámetros opcionales:
+    - titulo: Corregir nombre del título
+    - numero_titulo: Corregir número
+    - año_expedicion: Corregir año
+    - universidad: Corregir universidad
+    """
+    from models.enums import EstadoTitulo
+    from datetime import datetime
+    
+    student = await student_service.get_student(id=id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Estudiante no encontrado")
+    
+    if not student.titulo:
+        raise HTTPException(status_code=400, detail="El estudiante no tiene título para verificar")
+    
+    if student.titulo.estado == EstadoTitulo.VERIFICADO:
+        raise HTTPException(status_code=400, detail="El título ya está verificado")
+    
+    # Actualizar datos si el admin los proporcionó
+    if titulo:
+        student.titulo.titulo = titulo
+    if numero_titulo:
+        student.titulo.numero_titulo = numero_titulo
+    if año_expedicion:
+        student.titulo.año_expedicion = año_expedicion
+    if universidad:
+        student.titulo.universidad = universidad
+    
+    # Marcar como verificado
+    student.titulo.estado = EstadoTitulo.VERIFICADO
+    student.titulo.verificado_por = current_user.username
+    student.titulo.fecha_verificacion = datetime.utcnow()
+    student.titulo.motivo_rechazo = None  # Limpiar motivo de rechazo si existía
+    
+    await student.save()
+    return student
+
+
+@router.put("/{id}/titulo/rechazar", response_model=StudentResponse)
+async def rechazar_titulo(
+    *,
+    id: PydanticObjectId,
+    motivo: str = Form(..., description="Razón del rechazo"),
+    current_user: User = Depends(require_admin)
+) -> Any:
+    """
+    Rechazar el título de un estudiante
+    
+    Requiere: ADMIN o SUPERADMIN
+    
+    El admin debe proporcionar un motivo del rechazo para que
+    el estudiante sepa qué corregir.
+    
+    Ejemplos de motivos:
+    - "Documento ilegible"
+    - "Falta información"
+    - "Documento no corresponde a un título"
+    """
+    from models.enums import EstadoTitulo
+    from datetime import datetime
+    
+    student = await student_service.get_student(id=id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Estudiante no encontrado")
+    
+    if not student.titulo:
+        raise HTTPException(status_code=400, detail="El estudiante no tiene título para rechazar")
+    
+    # Marcar como rechazado
+    student.titulo.estado = EstadoTitulo.RECHAZADO
+    student.titulo.verificado_por = current_user.username
+    student.titulo.fecha_verificacion = datetime.utcnow()
+    student.titulo.motivo_rechazo = motivo
+    
+    await student.save()
     return student

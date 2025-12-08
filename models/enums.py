@@ -55,6 +55,33 @@ class TipoCurso(str, Enum):
     OTRO = "otro"
 
 
+class EstadoTitulo(str, Enum):
+    """
+    Estados de validación de un título profesional
+    
+    ¿Por qué necesitamos esto?
+    -------------------------
+    Los títulos deben ser verificados por administradores para garantizar
+    su autenticidad. Este enum rastrea el estado de validación.
+    
+    Valores:
+    -------
+    - SIN_TITULO: El estudiante no ha subido ningún título
+    - PENDIENTE: Título subido, esperando validación del admin
+    - VERIFICADO: Admin validó que el título es auténtico
+    - RECHAZADO: Admin rechazó el título (documento inválido/ilegible)
+    
+    Flujo típico:
+    ------------
+    SIN_TITULO → PENDIENTE (estudiante sube) → VERIFICADO (admin aprueba)
+                                             → RECHAZADO (admin rechaza)
+    """
+    SIN_TITULO = "sin_titulo"
+    PENDIENTE = "pendiente"
+    VERIFICADO = "verificado"
+    RECHAZADO = "rechazado"
+
+
 class Modalidad(str, Enum):
     """
     Modalidades de enseñanza disponibles

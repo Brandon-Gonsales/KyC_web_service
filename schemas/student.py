@@ -129,36 +129,25 @@ class StudentUpdateSelf(BaseModel):
     
     Uso: PATCH /students/me o PATCH /students/{id} (si es el mismo estudiante)
     
-    Permite actualizar información personal y documentos,
-    pero NO puede cambiar: registro, activo, lista_cursos_ids, titulo
+    Permite actualizar información personal básica.
+    
+    Para subir archivos, usar los endpoints dedicados:
+    - POST /students/me/upload/photo
+    - POST /students/me/upload/cv
+    - POST /students/me/upload/carnet
+    - POST /students/me/upload/afiliacion
     """
     
     password: Optional[str] = Field(None, min_length=8)
     celular: Optional[str] = None
     domicilio: Optional[str] = None
-    foto_url: Optional[str] = None
-    ci_url: Optional[str] = None
-    afiliacion_url: Optional[str] = None
-    cv_url: Optional[str] = None
-    titulo: Optional[Title] = None
     
     class Config:
         schema_extra = {
             "example": {
                 "password": "NuevaPassword123",
                 "celular": "71234567",
-                "domicilio": "Nueva Dirección #456, La Paz, Bolivia",
-                "foto_url": "https://storage.example.com/photos/nueva_foto.jpg",
-                "ci_url": "https://storage.example.com/docs/ci_actualizado.pdf",
-                "afiliacion_url": "https://storage.example.com/docs/afiliacion_actualizado.pdf",
-                "cv_url": "https://storage.example.com/docs/cv_actualizado.pdf",
-                "titulo": {
-                    "titulo": "Licenciatura en Ingeniería de Sistemas",
-                    "numero_titulo": "123456",
-                    "año_expedicion": "2020",
-                    "universidad": "Universidad Mayor de San Andrés",
-                    "titulo_url": "https://storage.example.com/titulos/brandon.pdf"
-                }
+                "domicilio": "Nueva Dirección #456, La Paz, Bolivia"
             }
         }
 
@@ -170,6 +159,13 @@ class StudentUpdateAdmin(BaseModel):
     Uso: PATCH /students/{id} (solo admins)
     
     Permite actualizar todos los campos excepto: id, created_at, updated_at
+    
+    Para subir archivos, usar los endpoints dedicados:
+    - POST /students/{id}/upload/photo
+    - POST /students/{id}/upload/cv
+    - POST /students/{id}/upload/carnet
+    - POST /students/{id}/upload/afiliacion
+    - POST /students/{id}/upload/titulo (solo admins)
     """
     registro: Optional[str] = None
     password: Optional[str] = Field(None, min_length=8)
@@ -180,11 +176,7 @@ class StudentUpdateAdmin(BaseModel):
     celular: Optional[str] = None
     domicilio: Optional[str] = None
     fecha_nacimiento: Optional[datetime] = None
-    foto_url: Optional[str] = None
     es_estudiante_interno: Optional[TipoEstudiante] = None
-    ci_url: Optional[str] = None
-    afiliacion_url: Optional[str] = None
-    cv_url: Optional[str] = None
     activo: Optional[bool] = None
     lista_cursos_ids: Optional[List[PyObjectId]] = None
     titulo: Optional[Title] = None
@@ -193,7 +185,6 @@ class StudentUpdateAdmin(BaseModel):
         schema_extra = {
             "example": {
                 "registro": "220005959",
-                "password": "NuevaPassword456",
                 "nombre": "Juan Carlos Pérez",
                 "email": "juan.perez@example.com",
                 "carnet": "87654321",
@@ -201,11 +192,7 @@ class StudentUpdateAdmin(BaseModel):
                 "celular": "77777777",
                 "domicilio": "Calle Falsa #123, La Paz, Bolivia",
                 "fecha_nacimiento": "1990-01-01T00:00:00",
-                "foto_url": "https://storage.example.com/photos/juan.jpg",
                 "es_estudiante_interno": "externo",
-                "ci_url": "https://storage.example.com/docs/ci_juan.pdf",
-                "afiliacion_url": "https://storage.example.com/docs/afiliacion_juan.pdf",
-                "cv_url": "https://storage.example.com/docs/cv_juan.pdf",
                 "activo": False,
                 "lista_cursos_ids": [],
                 "titulo": {
