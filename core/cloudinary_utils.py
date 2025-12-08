@@ -23,7 +23,8 @@ cloudinary.config(
 async def upload_pdf(
     file: UploadFile,
     folder: str,
-    public_id: Optional[str] = None
+    public_id: Optional[str] = None,
+    display_name: Optional[str] = None
 ) -> str:
     """
     Subir un archivo PDF a Cloudinary
@@ -32,6 +33,7 @@ async def upload_pdf(
         file: Archivo a subir
         folder: Carpeta en Cloudinary (ej: "students/cv")
         public_id: ID público opcional (nombre del archivo)
+        display_name: Nombre para mostrar al descargar (ej: "CV_Juan_Perez.pdf")
         
     Returns:
         URL del archivo subido
@@ -58,16 +60,37 @@ async def upload_pdf(
         )
     
     try:
+        # Preparar parámetros de subida
+        upload_params = {
+            "folder": folder,
+            "public_id": public_id,
+            "resource_type": "raw",  # Para PDFs
+            "overwrite": True
+        }
+        
+        # Si se proporciona display_name, agregarlo como contexto
+        if display_name:
+            upload_params["context"] = f"alt={display_name}"
+        
         # Subir a Cloudinary
         result = cloudinary.uploader.upload(
             file.file,
-            folder=folder,
-            public_id=public_id,
-            resource_type="raw",  # Para PDFs
-            overwrite=True
+            **upload_params
         )
         
-        return result["secure_url"]
+        # Si hay display_name, modificar la URL para incluir fl_attachment
+        url = result["secure_url"]
+        if display_name:
+            # Insertar fl_attachment con el nombre de descarga
+            # URL original: https://res.cloudinary.com/cloud/raw/upload/v123/folder/file.pdf
+            # URL modificada: https://res.cloudinary.com/cloud/raw/upload/fl_attachment:nombre/v123/folder/file.pdf
+            parts = url.split("/upload/")
+            if len(parts) == 2:
+                # Limpiar el nombre de archivo (remover caracteres especiales)
+                safe_name = display_name.replace(" ", "_").replace("/", "_")
+                url = f"{parts[0]}/upload/fl_attachment:{safe_name}/{parts[1]}"
+        
+        return url
     
     except Exception as e:
         raise HTTPException(

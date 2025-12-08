@@ -204,7 +204,8 @@ async def upload_student_cv(
     # Subir PDF a Cloudinary
     folder = f"students/{id}/documents"
     public_id = f"cv_{id}"
-    cv_url = await upload_pdf(file, folder, public_id)
+    display_name = f"CV_{student.nombre.replace(' ', '_')}.pdf"
+    cv_url = await upload_pdf(file, folder, public_id, display_name)
     
     # Actualizar URL en el estudiante
     student.cv_url = cv_url
@@ -246,7 +247,8 @@ async def upload_student_carnet(
     # Subir PDF a Cloudinary
     folder = f"students/{id}/documents"
     public_id = f"carnet_{id}"
-    ci_url = await upload_pdf(file, folder, public_id)
+    display_name = f"Carnet_{student.nombre.replace(' ', '_')}.pdf"
+    ci_url = await upload_pdf(file, folder, public_id, display_name)
     
     # Actualizar URL en el estudiante
     student.ci_url = ci_url
@@ -288,7 +290,8 @@ async def upload_student_afiliacion(
     # Subir PDF a Cloudinary
     folder = f"students/{id}/documents"
     public_id = f"afiliacion_{id}"
-    afiliacion_url = await upload_pdf(file, folder, public_id)
+    display_name = f"Afiliacion_{student.nombre.replace(' ', '_')}.pdf"
+    afiliacion_url = await upload_pdf(file, folder, public_id, display_name)
     
     # Actualizar URL en el estudiante
     student.afiliacion_url = afiliacion_url
@@ -324,7 +327,8 @@ async def upload_student_titulo(
     # Subir PDF a Cloudinary
     folder = f"students/{id}/documents"
     public_id = f"titulo_{id}"
-    titulo_url = await upload_pdf(file, folder, public_id)
+    display_name = f"Titulo_{student.nombre.replace(' ', '_')}.pdf"
+    titulo_url = await upload_pdf(file, folder, public_id, display_name)
     
     # Si no tiene título, crear uno nuevo
     if not student.titulo:
