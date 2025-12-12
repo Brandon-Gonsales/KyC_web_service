@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from models.course import Course
 from models.user import User
 from models.student import Student
-from schemas.course import CourseCreate, CourseResponse, CourseUpdate
+from schemas.course import CourseCreate, CourseResponse, CourseUpdate, CourseEnrolledStudent
 from services import course_service
 from beanie import PydanticObjectId
 from api.dependencies import require_admin, require_superadmin, get_current_user
@@ -88,3 +88,27 @@ async def delete_course(
         raise HTTPException(status_code=404, detail="Curso no encontrado")
     course = await course_service.delete_course(id=id)
     return course
+
+@router.get("/{id}/students", response_model=List[CourseEnrolledStudent])
+async def get_course_students(
+    *,
+    id: PydanticObjectId,
+    current_user: User = Depends(require_admin)
+) -> Any:
+    """
+    Obtener reporte detallado de estudiantes inscritos en un curso.
+    
+    Requiere: ADMIN o SUPERADMIN
+    
+    Retorna una lista con:
+    - Datos personales del estudiante (nombre, carnet, contacto)
+    - Datos de inscripción (fecha, estado, tipo)
+    - Datos financieros (total a pagar, pagado, saldo, % avance)
+    """
+    # Verificar que el curso existe
+    course = await course_service.get_course(id=id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Curso no encontrado")
+        
+    report = await course_service.get_course_students(course_id=id)
+    return report

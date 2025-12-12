@@ -9,12 +9,13 @@ Schemas incluidos:
 1. CourseCreate: Para crear nuevos cursos
 2. CourseResponse: Para mostrar cursos
 3. CourseUpdate: Para actualizar cursos
+4. CourseEnrolledStudent: Reporte de estudiantes inscritos
 """
 
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field, validator
-from models.enums import TipoCurso, Modalidad
+from models.enums import TipoCurso, Modalidad, EstadoInscripcion, TipoEstudiante
 from models.base import PyObjectId
 
 
@@ -61,8 +62,6 @@ class CourseCreate(BaseModel):
     fecha_inicio: Optional[datetime] = None
     fecha_fin: Optional[datetime] = None
     activo: bool = True
-    
-
     
     class Config:
         schema_extra = {
@@ -188,3 +187,42 @@ class CourseUpdate(BaseModel):
                 "activo": True
             }
         }
+
+
+# ============================================================================
+# SCHEMAS DE REPORTE
+# ============================================================================
+
+class StudentContactInfo(BaseModel):
+    email: str
+    celular: Optional[str] = None
+
+class EnrollmentInfo(BaseModel):
+    id: PyObjectId
+    fecha_inscripcion: datetime
+    estado: EstadoInscripcion
+    tipo_estudiante: TipoEstudiante
+
+class FinancialInfo(BaseModel):
+    total_a_pagar: float
+    total_pagado: float
+    saldo_pendiente: float
+    avance_pago: float = Field(..., description="Porcentaje de pago completado (0-100)")
+
+class CourseEnrolledStudent(BaseModel):
+    """
+    Schema para reporte de estudiantes inscritos en un curso.
+    Combina datos del estudiante y de su inscripción.
+    """
+    estudiante_id: PyObjectId
+    nombre: str
+    carnet: str
+    contacto: StudentContactInfo
+    inscripcion: EnrollmentInfo
+    financiero: FinancialInfo
+
+    model_config = {
+        "populate_by_name": True,
+        "arbitrary_types_allowed": True,
+        "from_attributes": True
+    }

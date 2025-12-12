@@ -38,7 +38,8 @@ from .student import (
 from .course import (
     CourseCreate,
     CourseResponse,
-    CourseUpdate
+    CourseUpdate,
+    CourseEnrolledStudent
 )
 
 # Enrollment schemas
@@ -84,6 +85,7 @@ __all__ = [
     "CourseCreate",
     "CourseResponse",
     "CourseUpdate",
+    "CourseEnrolledStudent",
     # Enrollment
     "EnrollmentCreate",
     "EnrollmentResponse",
