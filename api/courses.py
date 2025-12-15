@@ -14,18 +14,32 @@ from schemas.common import PaginatedResponse, PaginationMeta
 from fastapi import Query
 import math
 
+from models.enums import TipoCurso, Modalidad
+from typing import Optional
+
 @router.get("/", response_model=PaginatedResponse[CourseResponse])
 async def read_courses(
     page: int = Query(1, ge=1, description="Número de página"),
     per_page: int = Query(10, ge=1, le=100, description="Elementos por página"),
+    q: Optional[str] = Query(None, description="Búsqueda por nombre o código"),
+    activo: Optional[bool] = Query(None, description="Filtrar por estado activo"),
+    tipo_curso: Optional[TipoCurso] = Query(None, description="Filtrar por tipo de curso"),
+    modalidad: Optional[Modalidad] = Query(None, description="Filtrar por modalidad"),
     current_user: Union[User, Student] = Depends(get_current_user)
 ) -> Any:
     """
-    Recuperar cursos con paginación.
+    Recuperar cursos con paginación y filtros.
     
     Requiere: Autenticación (cualquier rol)
     """
-    courses, total_count = await course_service.get_courses(page=page, per_page=per_page)
+    courses, total_count = await course_service.get_courses(
+        page=page,
+        per_page=per_page,
+        q=q,
+        activo=activo,
+        tipo_curso=tipo_curso,
+        modalidad=modalidad
+    )
     
     # Calcular metadatos
     total_pages = math.ceil(total_count / per_page)

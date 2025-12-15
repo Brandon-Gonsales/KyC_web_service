@@ -72,25 +72,28 @@ async def list_enrollments(
     *,
     page: int = Query(1, ge=1, description="Número de página"),
     per_page: int = Query(10, ge=1, le=500, description="Elementos por página"),
-    estado: Optional[EstadoInscripcion] = None,
+    q: Optional[str] = Query(None, description="Búsqueda por estudiante o curso"),
+    estado: Optional[EstadoInscripcion] = Query(None, description="Filtrar por estado"),
+    curso_id: Optional[PydanticObjectId] = Query(None, description="Filtrar por Curso ID"),
+    estudiante_id: Optional[PydanticObjectId] = Query(None, description="Filtrar por Estudiante ID"),
     current_user: User | Student = Depends(get_current_user)
 ) -> Any:
     """
-    Listar inscripciones con paginación
+    Listar inscripciones con paginación y filtros
     
     Permisos:
-    - ADMIN: Ve todas las inscripciones
+    - ADMIN: Ve todas las inscripciones (con filtros avanzados)
     - STUDENT: Ve solo sus propias inscripciones
-    
-    Filtros disponibles:
-    - estado: Filtrar por estado específico
     """
     # Si es admin, retorna todas (paginadas en DB)
     if isinstance(current_user, User):
         enrollments, total_count = await enrollment_service.get_all_enrollments(
             page=page,
             per_page=per_page,
-            estado=estado
+            q=q,
+            estado=estado,
+            curso_id=curso_id,
+            estudiante_id=estudiante_id
         )
     
     # Si es estudiante, solo sus inscripciones (paginadas en memoria por ahora)

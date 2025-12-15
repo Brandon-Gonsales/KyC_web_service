@@ -83,25 +83,28 @@ async def list_payments(
     *,
     page: int = Query(1, ge=1, description="Número de página"),
     per_page: int = Query(10, ge=1, le=500, description="Elementos por página"),
-    estado: Optional[EstadoPago] = None,
+    q: Optional[str] = Query(None, description="Búsqueda por transacción o comprobante"),
+    estado: Optional[EstadoPago] = Query(None, description="Filtrar por estado"),
+    curso_id: Optional[PydanticObjectId] = Query(None, description="Filtrar por Curso ID"),
+    estudiante_id: Optional[PydanticObjectId] = Query(None, description="Filtrar por Estudiante ID"),
     current_user: User | Student = Depends(get_current_user)
 ) -> Any:
     """
-    Listar pagos con paginación
+    Listar pagos con paginación y filtros
     
     Permisos:
-    - ADMIN: Ve todos los pagos
+    - ADMIN: Ve todos los pagos (con filtros avanzados)
     - STUDENT: Ve solo sus propios pagos
-    
-    Filtros disponibles:
-    - estado: Filtrar por estado (PENDIENTE, APROBADO, RECHAZADO)
     """
     # Si es admin, retorna todos (paginadas en DB)
     if isinstance(current_user, User):
         payments, total_count = await payment_service.get_all_payments(
             page=page,
             per_page=per_page,
-            estado=estado
+            q=q,
+            estado=estado,
+            curso_id=curso_id,
+            estudiante_id=estudiante_id
         )
     
     # Si es estudiante, solo sus pagos (paginadas en memoria por ahora)

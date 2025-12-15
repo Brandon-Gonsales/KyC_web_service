@@ -12,6 +12,9 @@ from schemas.common import PaginatedResponse, PaginationMeta
 from fastapi import Query
 import math
 
+from models.enums import UserRole
+from typing import Optional
+
 @router.get("/", response_model=PaginatedResponse[UserResponse])
 async def read_users(
     page: int = Query(1, ge=1, description="Número de página"),

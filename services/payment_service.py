@@ -103,23 +103,51 @@ async def get_payments_by_course(course_id: PydanticObjectId) -> List[Payment]:
     ).to_list()
 
 
+from beanie.operators import Or
+
 async def get_all_payments(
     page: int = 1,
     per_page: int = 10,
-    estado: Optional[EstadoPago] = None
+    q: Optional[str] = None,
+    estado: Optional[EstadoPago] = None,
+    curso_id: Optional[PydanticObjectId] = None,
+    estudiante_id: Optional[PydanticObjectId] = None
 ) -> tuple[List[Payment], int]:
     """
-    Obtener todos los pagos (solo admins) con paginación
+    Obtener todos los pagos con paginación y filtros
     
     Args:
         page: Número de página
         per_page: Elementos por página
-        estado: Filtrar por estado (opcional)
+        q: Búsqueda por número de transacción o comprobante
+        estado: Filtrar por estado
+        curso_id: Filtrar por Curso ID
+        estudiante_id: Filtrar por Estudiante ID
     """
     query = Payment.find()
     
+    # 1. Filtro Estado
     if estado:
         query = query.find(Payment.estado_pago == estado)
+        
+    # 2. Filtro Curso ID
+    if curso_id:
+        query = query.find(Payment.curso_id == curso_id)
+        
+    # 3. Filtro Estudiante ID
+    if estudiante_id:
+        query = query.find(Payment.estudiante_id == estudiante_id)
+        
+    # 4. Búsqueda por texto (q)
+    if q:
+        regex_pattern = {"$regex": q, "$options": "i"}
+        query = query.find(
+            Or(
+                Payment.numero_transaccion == regex_pattern,
+                Payment.comprobante_url == regex_pattern,
+                Payment.concepto == regex_pattern
+            )
+        )
     
     total_count = await query.count()
     skip = (page - 1) * per_page

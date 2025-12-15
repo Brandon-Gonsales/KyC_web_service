@@ -16,9 +16,52 @@ async def get_course(id: PydanticObjectId) -> Optional[Course]:
     """Obtiene un curso por su ID"""
     return await Course.get(id)
 
-async def get_courses(page: int = 1, per_page: int = 10) -> tuple[List[Course], int]:
-    """Obtiene múltiples cursos con paginación"""
-    query = Course.find_all()
+from models.enums import TipoCurso, Modalidad
+from beanie.operators import Or
+
+async def get_courses(
+    page: int = 1,
+    per_page: int = 10,
+    q: Optional[str] = None,
+    activo: Optional[bool] = None,
+    tipo_curso: Optional[TipoCurso] = None,
+    modalidad: Optional[Modalidad] = None
+) -> tuple[List[Course], int]:
+    """
+    Obtiene múltiples cursos con paginación y filtros
+    
+    Args:
+        page: Número de página
+        per_page: Elementos por página
+        q: Búsqueda por nombre o código
+        activo: Filtrar por estado activo/inactivo
+        tipo_curso: Filtrar por tipo de curso
+        modalidad: Filtrar por modalidad
+    """
+    query = Course.find()
+    
+    # 1. Búsqueda por texto (q)
+    if q:
+        regex_pattern = {"$regex": q, "$options": "i"}
+        query = query.find(
+            Or(
+                Course.nombre_programa == regex_pattern,
+                Course.codigo == regex_pattern
+            )
+        )
+        
+    # 2. Filtro Activo
+    if activo is not None:
+        query = query.find(Course.activo == activo)
+        
+    # 3. Filtro Tipo Curso
+    if tipo_curso:
+        query = query.find(Course.tipo_curso == tipo_curso)
+        
+    # 4. Filtro Modalidad
+    if modalidad:
+        query = query.find(Course.modalidad == modalidad)
+    
     total_count = await query.count()
     skip = (page - 1) * per_page
     courses = await query.skip(skip).limit(per_page).to_list()

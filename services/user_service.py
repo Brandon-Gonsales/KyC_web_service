@@ -11,6 +11,9 @@ from models.user import User
 from schemas.user import UserCreate, UserUpdate
 
 
+from models.enums import UserRole
+from beanie.operators import Or
+
 async def get_users(page: int = 1, per_page: int = 10) -> tuple[List[User], int]:
     """Obtener lista de usuarios con paginación"""
     query = User.find_all()

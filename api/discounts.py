@@ -13,6 +13,8 @@ from schemas.common import PaginatedResponse, PaginationMeta
 from fastapi import Query
 import math
 
+from typing import Optional
+
 @router.get("/", response_model=PaginatedResponse[DiscountResponse])
 async def read_discounts(
     page: int = Query(1, ge=1, description="Número de página"),

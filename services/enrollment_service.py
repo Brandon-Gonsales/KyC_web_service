@@ -127,23 +127,67 @@ async def get_enrollments_by_course(course_id: PydanticObjectId) -> List[Enrollm
     ).to_list()
 
 
+from beanie.operators import In, Or
+
 async def get_all_enrollments(
     page: int = 1,
     per_page: int = 10,
-    estado: Optional[EstadoInscripcion] = None
+    q: Optional[str] = None,
+    estado: Optional[EstadoInscripcion] = None,
+    curso_id: Optional[PydanticObjectId] = None,
+    estudiante_id: Optional[PydanticObjectId] = None
 ) -> tuple[List[Enrollment], int]:
     """
-    Obtener todas las inscripciones (solo admins) con paginación
+    Obtener todas las inscripciones con paginación y filtros
     
     Args:
         page: Número de página
         per_page: Elementos por página
-        estado: Filtrar por estado (opcional)
+        q: Búsqueda por nombre de estudiante o curso
+        estado: Filtrar por estado
+        curso_id: Filtrar por ID de curso
+        estudiante_id: Filtrar por ID de estudiante
     """
     query = Enrollment.find()
     
+    # 1. Filtro Estado
     if estado:
         query = query.find(Enrollment.estado == estado)
+        
+    # 2. Filtro Curso ID
+    if curso_id:
+        query = query.find(Enrollment.curso_id == curso_id)
+        
+    # 3. Filtro Estudiante ID
+    if estudiante_id:
+        query = query.find(Enrollment.estudiante_id == estudiante_id)
+        
+    # 4. Búsqueda por texto (q) - Estudiante o Curso
+    if q:
+        # Buscar estudiantes que coincidan
+        regex_pattern = {"$regex": q, "$options": "i"}
+        
+        students = await Student.find(
+            Or(
+                Student.nombre_completo == regex_pattern,
+                Student.carnet_identidad == regex_pattern
+            )
+        ).to_list()
+        student_ids = [s.id for s in students]
+        
+        # Buscar cursos que coincidan
+        courses = await Course.find(
+            Course.nombre_programa == regex_pattern
+        ).to_list()
+        course_ids = [c.id for c in courses]
+        
+        # Filtrar inscripciones que coincidan con estudiantes O cursos encontrados
+        query = query.find(
+            Or(
+                In(Enrollment.estudiante_id, student_ids),
+                In(Enrollment.curso_id, course_ids)
+            )
+        )
     
     total_count = await query.count()
     skip = (page - 1) * per_page
