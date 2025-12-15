@@ -139,7 +139,11 @@ class Enrollment(MongoBaseModel):
     def validar_saldo(cls, v, info):
         """Valida que el saldo pendiente sea correcto"""
         if 'total_a_pagar' in info.data and 'total_pagado' in info.data:
-            esperado = info.data['total_a_pagar'] - info.data['total_pagado']
+            calculado = info.data['total_a_pagar'] - info.data['total_pagado']
+            
+            # Si hay sobrepago (calculado < 0), el saldo debe ser 0
+            esperado = max(0.0, calculado)
+            
             if abs(v - esperado) > 0.01:  # Tolerancia de 1 centavo
                 raise ValueError(
                     f"Saldo pendiente inválido: {v} Bs. "

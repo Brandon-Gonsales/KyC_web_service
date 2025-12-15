@@ -37,14 +37,14 @@ async def get_students(
     
     # 1. Filtro de búsqueda (q)
     if q:
-        # Busca coincidencias parciales (case-insensitive) en varios campos
-        search_regex = RegEx(f".*{q}.*", "i")  # "i" = case insensitive
+        # Usar sintaxis nativa de MongoDB para regex (más robusta)
+        regex_pattern = {"$regex": q, "$options": "i"}
         query = query.find(
             Or(
-                Student.nombre == search_regex,
-                Student.email == search_regex,
-                Student.carnet == search_regex,
-                Student.registro == search_regex
+                Student.nombre == regex_pattern,
+                Student.email == regex_pattern,
+                Student.carnet == regex_pattern,
+                Student.registro == regex_pattern
             )
         )
     
