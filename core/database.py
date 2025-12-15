@@ -40,4 +40,4 @@ async def init_db():
             Discount,
         ]
     )
-    print(f"✅ Conectado a MongoDB ({settings.DATABASE_NAME}) y Beanie inicializado.")
+    print(f"[OK] Conectado a MongoDB ({settings.DATABASE_NAME}) y Beanie inicializado.")

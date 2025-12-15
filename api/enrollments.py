@@ -64,16 +64,19 @@ async def create_enrollment(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/", response_model=List[EnrollmentResponse])
+from schemas.common import PaginatedResponse, PaginationMeta
+import math
+
+@router.get("/", response_model=PaginatedResponse[EnrollmentResponse])
 async def list_enrollments(
     *,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=500),
+    page: int = Query(1, ge=1, description="Número de página"),
+    per_page: int = Query(10, ge=1, le=500, description="Elementos por página"),
     estado: Optional[EstadoInscripcion] = None,
     current_user: User | Student = Depends(get_current_user)
 ) -> Any:
     """
-    Listar inscripciones
+    Listar inscripciones con paginación
     
     Permisos:
     - ADMIN: Ve todas las inscripciones
@@ -82,29 +85,50 @@ async def list_enrollments(
     Filtros disponibles:
     - estado: Filtrar por estado específico
     """
-    # Si es admin, retorna todas
+    # Si es admin, retorna todas (paginadas en DB)
     if isinstance(current_user, User):
-        enrollments = await enrollment_service.get_all_enrollments(
-            skip=skip,
-            limit=limit,
+        enrollments, total_count = await enrollment_service.get_all_enrollments(
+            page=page,
+            per_page=per_page,
             estado=estado
         )
-        return enrollments
     
-    # Si es estudiante, solo sus inscripciones
-    if isinstance(current_user, Student):
-        enrollments = await enrollment_service.get_enrollments_by_student(
+    # Si es estudiante, solo sus inscripciones (paginadas en memoria por ahora)
+    elif isinstance(current_user, Student):
+        all_enrollments = await enrollment_service.get_enrollments_by_student(
             student_id=current_user.id
         )
         
         # Aplicar filtro de estado si lo pidió
         if estado:
-            enrollments = [e for e in enrollments if e.estado == estado]
+            all_enrollments = [e for e in all_enrollments if e.estado == estado]
+            
+        total_count = len(all_enrollments)
         
         # Aplicar paginación manual
-        return enrollments[skip:skip + limit]
+        start = (page - 1) * per_page
+        end = start + per_page
+        enrollments = all_enrollments[start:end]
     
-    raise HTTPException(status_code=403, detail="No autorizado")
+    else:
+        raise HTTPException(status_code=403, detail="No autorizado")
+
+    # Calcular metadatos comunes
+    total_pages = math.ceil(total_count / per_page) if total_count > 0 else 0
+    has_next = page < total_pages
+    has_prev = page > 1
+    
+    return {
+        "data": enrollments,
+        "meta": PaginationMeta(
+            page=page,
+            limit=per_page,
+            totalItems=total_count,
+            totalPages=total_pages,
+            hasNextPage=has_next,
+            hasPrevPage=has_prev
+        )
+    }
 
 
 @router.get("/{id}", response_model=EnrollmentResponse)

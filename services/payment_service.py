@@ -104,16 +104,16 @@ async def get_payments_by_course(course_id: PydanticObjectId) -> List[Payment]:
 
 
 async def get_all_payments(
-    skip: int = 0,
-    limit: int = 100,
+    page: int = 1,
+    per_page: int = 10,
     estado: Optional[EstadoPago] = None
-) -> List[Payment]:
+) -> tuple[List[Payment], int]:
     """
-    Obtener todos los pagos (solo admins)
+    Obtener todos los pagos (solo admins) con paginación
     
     Args:
-        skip: Cantidad de registros a saltar (paginación)
-        limit: Cantidad máxima de registros a retornar
+        page: Número de página
+        per_page: Elementos por página
         estado: Filtrar por estado (opcional)
     """
     query = Payment.find()
@@ -121,7 +121,11 @@ async def get_all_payments(
     if estado:
         query = query.find(Payment.estado_pago == estado)
     
-    return await query.skip(skip).limit(limit).to_list()
+    total_count = await query.count()
+    skip = (page - 1) * per_page
+    
+    payments = await query.skip(skip).limit(per_page).to_list()
+    return payments, total_count
 
 
 async def get_payments_pendientes() -> List[Payment]:

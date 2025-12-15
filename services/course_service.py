@@ -16,9 +16,13 @@ async def get_course(id: PydanticObjectId) -> Optional[Course]:
     """Obtiene un curso por su ID"""
     return await Course.get(id)
 
-async def get_courses(skip: int = 0, limit: int = 100) -> List[Course]:
+async def get_courses(page: int = 1, per_page: int = 10) -> tuple[List[Course], int]:
     """Obtiene múltiples cursos con paginación"""
-    return await Course.find_all().skip(skip).limit(limit).to_list()
+    query = Course.find_all()
+    total_count = await query.count()
+    skip = (page - 1) * per_page
+    courses = await query.skip(skip).limit(per_page).to_list()
+    return courses, total_count
 
 async def create_course(course_in: CourseCreate) -> Course:
     """Crea un nuevo curso"""

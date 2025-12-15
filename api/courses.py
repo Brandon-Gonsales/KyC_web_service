@@ -10,19 +10,39 @@ from api.dependencies import require_admin, require_superadmin, get_current_user
 
 router = APIRouter()
 
-@router.get("/", response_model=List[CourseResponse])
+from schemas.common import PaginatedResponse, PaginationMeta
+from fastapi import Query
+import math
+
+@router.get("/", response_model=PaginatedResponse[CourseResponse])
 async def read_courses(
-    skip: int = 0,
-    limit: int = 100,
+    page: int = Query(1, ge=1, description="Número de página"),
+    per_page: int = Query(10, ge=1, le=100, description="Elementos por página"),
     current_user: Union[User, Student] = Depends(get_current_user)
 ) -> Any:
     """
-    Recuperar cursos.
+    Recuperar cursos con paginación.
     
     Requiere: Autenticación (cualquier rol)
     """
-    courses = await course_service.get_courses(skip=skip, limit=limit)
-    return courses
+    courses, total_count = await course_service.get_courses(page=page, per_page=per_page)
+    
+    # Calcular metadatos
+    total_pages = math.ceil(total_count / per_page)
+    has_next = page < total_pages
+    has_prev = page > 1
+    
+    return {
+        "data": courses,
+        "meta": PaginationMeta(
+            page=page,
+            limit=per_page,
+            totalItems=total_count,
+            totalPages=total_pages,
+            hasNextPage=has_next,
+            hasPrevPage=has_prev
+        )
+    }
 
 @router.post("/", response_model=CourseResponse)
 async def create_course(

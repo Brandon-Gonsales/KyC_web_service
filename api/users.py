@@ -8,19 +8,39 @@ from api.dependencies import require_admin, require_superadmin
 
 router = APIRouter()
 
-@router.get("/", response_model=List[UserResponse])
+from schemas.common import PaginatedResponse, PaginationMeta
+from fastapi import Query
+import math
+
+@router.get("/", response_model=PaginatedResponse[UserResponse])
 async def read_users(
-    skip: int = 0,
-    limit: int = 100,
+    page: int = Query(1, ge=1, description="Número de página"),
+    per_page: int = Query(10, ge=1, le=100, description="Elementos por página"),
     current_user: User = Depends(require_admin)
 ) -> Any:
     """
-    Recuperar usuarios.
+    Recuperar usuarios con paginación.
     
     Requiere: ADMIN o SUPERADMIN
     """
-    users = await user_service.get_users(skip=skip, limit=limit)
-    return users
+    users, total_count = await user_service.get_users(page=page, per_page=per_page)
+    
+    # Calcular metadatos
+    total_pages = math.ceil(total_count / per_page)
+    has_next = page < total_pages
+    has_prev = page > 1
+    
+    return {
+        "data": users,
+        "meta": PaginationMeta(
+            page=page,
+            limit=per_page,
+            totalItems=total_count,
+            totalPages=total_pages,
+            hasNextPage=has_next,
+            hasPrevPage=has_prev
+        )
+    }
 
 @router.post("/", response_model=UserResponse)
 async def create_user(

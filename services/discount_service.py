@@ -11,9 +11,13 @@ from models.discount import Discount
 from schemas.discount import DiscountCreate, DiscountUpdate
 
 
-async def get_discounts(skip: int = 0, limit: int = 100) -> List[Discount]:
-    """Obtener lista de descuentos"""
-    return await Discount.find_all().skip(skip).limit(limit).to_list()
+async def get_discounts(page: int = 1, per_page: int = 10) -> tuple[List[Discount], int]:
+    """Obtener lista de descuentos con paginación"""
+    query = Discount.find_all()
+    total_count = await query.count()
+    skip = (page - 1) * per_page
+    discounts = await query.skip(skip).limit(per_page).to_list()
+    return discounts, total_count
 
 
 async def get_discount(id: PydanticObjectId) -> Optional[Discount]:

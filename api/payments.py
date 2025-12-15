@@ -75,16 +75,19 @@ async def create_payment(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/", response_model=List[PaymentResponse])
+from schemas.common import PaginatedResponse, PaginationMeta
+import math
+
+@router.get("/", response_model=PaginatedResponse[PaymentResponse])
 async def list_payments(
     *,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=500),
+    page: int = Query(1, ge=1, description="Número de página"),
+    per_page: int = Query(10, ge=1, le=500, description="Elementos por página"),
     estado: Optional[EstadoPago] = None,
     current_user: User | Student = Depends(get_current_user)
 ) -> Any:
     """
-    Listar pagos
+    Listar pagos con paginación
     
     Permisos:
     - ADMIN: Ve todos los pagos
@@ -93,29 +96,50 @@ async def list_payments(
     Filtros disponibles:
     - estado: Filtrar por estado (PENDIENTE, APROBADO, RECHAZADO)
     """
-    # Si es admin, retorna todos
+    # Si es admin, retorna todos (paginadas en DB)
     if isinstance(current_user, User):
-        payments = await payment_service.get_all_payments(
-            skip=skip,
-            limit=limit,
+        payments, total_count = await payment_service.get_all_payments(
+            page=page,
+            per_page=per_page,
             estado=estado
         )
-        return payments
     
-    # Si es estudiante, solo sus pagos
-    if isinstance(current_user, Student):
-        payments = await payment_service.get_payments_by_student(
+    # Si es estudiante, solo sus pagos (paginadas en memoria por ahora)
+    elif isinstance(current_user, Student):
+        all_payments = await payment_service.get_payments_by_student(
             student_id=current_user.id
         )
         
         # Aplicar filtro de estado si lo pidió
         if estado:
-            payments = [p for p in payments if p.estado_pago == estado]
+            all_payments = [p for p in all_payments if p.estado_pago == estado]
+            
+        total_count = len(all_payments)
         
         # Aplicar paginación manual
-        return payments[skip:skip + limit]
+        start = (page - 1) * per_page
+        end = start + per_page
+        payments = all_payments[start:end]
     
-    raise HTTPException(status_code=403, detail="No autorizado")
+    else:
+        raise HTTPException(status_code=403, detail="No autorizado")
+
+    # Calcular metadatos comunes
+    total_pages = math.ceil(total_count / per_page) if total_count > 0 else 0
+    has_next = page < total_pages
+    has_prev = page > 1
+    
+    return {
+        "data": payments,
+        "meta": PaginationMeta(
+            page=page,
+            limit=per_page,
+            totalItems=total_count,
+            totalPages=total_pages,
+            hasNextPage=has_next,
+            hasPrevPage=has_prev
+        )
+    }
 
 
 @router.get("/{id}", response_model=PaymentResponse)

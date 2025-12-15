@@ -11,9 +11,13 @@ from models.user import User
 from schemas.user import UserCreate, UserUpdate
 
 
-async def get_users(skip: int = 0, limit: int = 100) -> List[User]:
-    """Obtener lista de usuarios"""
-    return await User.find_all().skip(skip).limit(limit).to_list()
+async def get_users(page: int = 1, per_page: int = 10) -> tuple[List[User], int]:
+    """Obtener lista de usuarios con paginación"""
+    query = User.find_all()
+    total_count = await query.count()
+    skip = (page - 1) * per_page
+    users = await query.skip(skip).limit(per_page).to_list()
+    return users, total_count
 
 
 async def get_user(id: PydanticObjectId) -> Optional[User]:

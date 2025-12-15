@@ -128,16 +128,16 @@ async def get_enrollments_by_course(course_id: PydanticObjectId) -> List[Enrollm
 
 
 async def get_all_enrollments(
-    skip: int = 0,
-    limit: int = 100,
+    page: int = 1,
+    per_page: int = 10,
     estado: Optional[EstadoInscripcion] = None
-) -> List[Enrollment]:
+) -> tuple[List[Enrollment], int]:
     """
-    Obtener todas las inscripciones (solo admins)
+    Obtener todas las inscripciones (solo admins) con paginación
     
     Args:
-        skip: Cantidad de registros a saltar (paginación)
-        limit: Cantidad máxima de registros a retornar
+        page: Número de página
+        per_page: Elementos por página
         estado: Filtrar por estado (opcional)
     """
     query = Enrollment.find()
@@ -145,7 +145,11 @@ async def get_all_enrollments(
     if estado:
         query = query.find(Enrollment.estado == estado)
     
-    return await query.skip(skip).limit(limit).to_list()
+    total_count = await query.count()
+    skip = (page - 1) * per_page
+    
+    enrollments = await query.skip(skip).limit(per_page).to_list()
+    return enrollments, total_count
 
 
 async def update_enrollment_descuento(
