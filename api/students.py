@@ -9,10 +9,13 @@ from api.dependencies import require_admin, get_current_user
 
 router = APIRouter()
 
-@router.get("/", response_model=List[StudentResponse])
+from schemas.common import PaginatedResponse, PaginationMeta
+import math
+
+@router.get("/", response_model=PaginatedResponse[StudentResponse])
 async def read_students(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1),
+    page: int = Query(1, ge=1, description="Número de página"),
+    per_page: int = Query(10, ge=1, le=100, description="Elementos por página"),
     q: Optional[str] = Query(None, description="Buscar por nombre, email, carnet o registro"),
     activo: Optional[bool] = Query(None, description="Filtrar por estado activo/inactivo"),
     estado_titulo: Optional[str] = Query(None, description="Filtrar por estado del título (pendiente, verificado, etc)"),
@@ -20,7 +23,7 @@ async def read_students(
     current_user: User = Depends(require_admin)
 ) -> Any:
     """
-    Recuperar estudiantes con filtros.
+    Recuperar estudiantes con filtros y paginación.
     
     Requiere: ADMIN o SUPERADMIN
     
@@ -30,15 +33,31 @@ async def read_students(
     - estado_titulo: pendiente, verificado, rechazado, sin_titulo
     - curso_id: ID de un curso
     """
-    students = await student_service.get_students(
-        skip=skip,
-        limit=limit,
+    students, total_count = await student_service.get_students(
+        page=page,
+        per_page=per_page,
         q=q,
         activo=activo,
         estado_titulo=estado_titulo,
         curso_id=curso_id
     )
-    return students
+    
+    # Calcular metadatos
+    total_pages = math.ceil(total_count / per_page)
+    has_next = page < total_pages
+    has_prev = page > 1
+    
+    return {
+        "data": students,
+        "meta": PaginationMeta(
+            page=page,
+            limit=per_page,
+            totalItems=total_count,
+            totalPages=total_pages,
+            hasNextPage=has_next,
+            hasPrevPage=has_prev
+        )
+    }
 
 @router.post("/", response_model=StudentResponse)
 async def create_student(

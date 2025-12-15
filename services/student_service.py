@@ -14,23 +14,26 @@ from beanie.operators import Or, RegEx
 
 
 async def get_students(
-    skip: int = 0,
-    limit: int = 100,
+    page: int = 1,
+    per_page: int = 10,
     q: Optional[str] = None,
     activo: Optional[bool] = None,
     estado_titulo: Optional[EstadoTitulo] = None,
     curso_id: Optional[PydanticObjectId] = None
-) -> List[Student]:
+) -> tuple[List[Student], int]:
     """
-    Obtener lista de estudiantes con filtros avanzados
+    Obtener lista de estudiantes con filtros avanzados y paginación
     
     Args:
-        skip: Paginación (saltar)
-        limit: Paginación (límite)
+        page: Número de página (1-indexed)
+        per_page: Elementos por página
         q: Búsqueda por texto (nombre, email, carnet, registro)
         activo: Filtrar por estado activo/inactivo
         estado_titulo: Filtrar por estado del título
         curso_id: Filtrar por inscripción en un curso
+        
+    Returns:
+        Tuple[List[Student], int]: (Lista de estudiantes, Total de coincidencias)
     """
     # Iniciar consulta base
     query = Student.find()
@@ -71,8 +74,16 @@ async def get_students(
         # lista_cursos_ids es una lista de IDs (Optimizado)
         query = query.find(Student.lista_cursos_ids == curso_id)
     
+    # Calcular total antes de paginar
+    total_count = await query.count()
+    
+    # Calcular skip
+    skip = (page - 1) * per_page
+    
     # Ejecutar consulta con paginación
-    return await query.skip(skip).limit(limit).to_list()
+    students = await query.skip(skip).limit(per_page).to_list()
+    
+    return students, total_count
 
 
 async def get_student(id: PydanticObjectId) -> Optional[Student]:
