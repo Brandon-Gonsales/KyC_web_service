@@ -25,12 +25,28 @@ class EnrollmentCreate(BaseModel):
     
     Uso: POST /enrollments/
     
+    SISTEMA DE DOBLE DESCUENTO:
+    ---------------------------
+    1. Descuento del Curso (AUTOMÁTICO):
+       - Se aplica automáticamente desde Course.descuento_id
+       - No necesitas enviarlo, el sistema lo obtiene del curso
+    
+    2. Descuento del Estudiante (OPCIONAL):
+       - Debes enviarlo en descuento_id O descuento_personalizado
+       - Se aplica DESPUÉS del descuento del curso (acumulativo)
+    
+    Ejemplo de cálculo:
+    - Precio base: 3000 Bs
+    - Descuento curso (10%): 3000 - 300 = 2700 Bs
+    - Descuento estudiante (5%): 2700 - 135 = 2565 Bs FINAL
+    
     El sistema calculará automáticamente:
     - costo_total (desde Course según es_estudiante_interno)
     - costo_matricula (desde Course)
     - cantidad_cuotas (desde Course)
-    - descuento_curso_aplicado (desde Course.descuento_curso)
-    - total_a_pagar (aplicando descuentos)
+    - descuento_curso_aplicado (desde Course.descuento_id - AUTOMÁTICO)
+    - descuento_personalizado (desde descuento_id o porcentaje manual)
+    - total_a_pagar (aplicando AMBOS descuentos en cascada)
     - saldo_pendiente (= total_a_pagar al inicio)
     """
     
@@ -46,14 +62,14 @@ class EnrollmentCreate(BaseModel):
     
     descuento_id: Optional[PyObjectId] = Field(
         None,
-        description="ID del descuento a aplicar al estudiante (opcional)"
+        description="ID del descuento PERSONALIZADO del estudiante (opcional, nivel 2)"
     )
     
     descuento_personalizado: Optional[float] = Field(
         None,
         ge=0,
         le=100,
-        description="Descuento manual (solo si no se usa descuento_id)"
+        description="Porcentaje de descuento manual (solo si no se usa descuento_id, nivel 2)"
     )
     
     class Config:
@@ -61,7 +77,7 @@ class EnrollmentCreate(BaseModel):
             "example": {
                 "estudiante_id": "507f1f77bcf86cd799439011",
                 "curso_id": "507f1f77bcf86cd799439012",
-                "descuento_personalizado": 5.0
+                "descuento_id": "507f1f77bcf86cd799439088"
             }
         }
 

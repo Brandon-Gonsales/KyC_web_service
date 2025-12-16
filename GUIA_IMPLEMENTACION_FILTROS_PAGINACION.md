@@ -1,80 +1,71 @@
-# Guía de Implementación: Filtros y Paginación
+# Guía de Implementación: Filtros y Paginación (FastAPI + Svelte)
 **Para:** Equipo de Desarrollo (Backend & Frontend)
-**Objetivo:** Estandarizar la forma de listar datos en el sistema para garantizar rendimiento y usabilidad.
+**Objetivo:** Estandarizar la implementación de listados utilizando FastAPI (Python) y Svelte (JS).
 
 ---
 
 ## 1. Introducción
 
-Cuando una aplicación escala, no podemos devolver "todos" los registros de golpe.
-*   **Backend**: Sobrecarga la base de datos y la memoria.
-*   **Frontend**: Congela el navegador y consume muchos datos.
-
-**Solución:** Implementar **Paginación** (traer datos por bloques) y **Filtros** (traer solo lo necesario) en el servidor.
+Esta guía detalla cómo implementar un sistema de listado eficiente con paginación y filtros de búsqueda. Usaremos como referencia el módulo de **Estudiantes (`Students`)** del proyecto actual.
 
 ---
 
-## 2. Guía para Backend (FastAPI + Beanie)
+## 2. Backend (FastAPI + Beanie)
 
-### Paso A: Estandarizar la Respuesta
-No devuelvas una lista plana `[Obj1, Obj2]`. Devuelve un objeto con metadatos.
+### Paso A: El Schema de Respuesta
+En lugar de devolver una lista simple, devolvemos un objeto estructurado con metadatos.
 
-**Schema Genérico (`schemas/common.py`):**
+**Archivo:** `schemas/common.py` (o definido en cada endpoint)
 ```python
-from typing import Generic, TypeVar, List
-from pydantic import BaseModel
-
-T = TypeVar("T")
-
 class PaginatedResponse(BaseModel, Generic[T]):
-    total: int          # Total de registros que coinciden con el filtro
+    total: int          # Total de registros encontrados
     page: int           # Página actual
-    per_page: int       # Elementos por página
-    total_pages: int    # Total de páginas calculadas
-    data: List[T]       # Los datos reales
+    per_page: int       # Registros por página
+    total_pages: int    # Total de páginas
+    data: List[T]       # Lista de objetos
 ```
 
-### Paso B: Implementar Lógica en el Servicio
-El servicio debe recibir `page`, `per_page` y los filtros opcionales.
+### Paso B: El Servicio (Lógica de Negocio)
+El servicio debe aceptar parámetros de paginación y filtros opcionales.
 
-**Ejemplo (`services/student_service.py`):**
+**Archivo:** `services/student_service.py`
 ```python
 async def get_students(
-    page: int, 
-    per_page: int, 
-    q: Optional[str] = None  # Búsqueda de texto
+    page: int = 1,
+    per_page: int = 10,
+    q: Optional[str] = None  # Filtro de búsqueda
 ) -> tuple[List[Student], int]:
     
     query = Student.find()
     
-    # 1. Aplicar Filtros
+    # 1. Aplicar Filtros (Búsqueda insensible a mayúsculas)
     if q:
-        # Búsqueda "case-insensitive" en múltiples campos
         regex = {"$regex": q, "$options": "i"}
         query = query.find(
             Or(
                 Student.nombre == regex,
-                Student.email == regex
+                Student.email == regex,
+                Student.carnet == regex
             )
         )
     
-    # 2. Contar Total (Importante para el frontend)
+    # 2. Obtener Total (CRÍTICO para calcular páginas)
     total_count = await query.count()
     
-    # 3. Paginar
+    # 3. Aplicar Paginación (Skip & Limit)
     skip = (page - 1) * per_page
-    items = await query.skip(skip).limit(per_page).to_list()
+    students = await query.skip(skip).limit(per_page).to_list()
     
-    return items, total_count
+    return students, total_count
 ```
 
-### Paso C: Exponer en el Endpoint
-El endpoint conecta todo y calcula `total_pages`.
+### Paso C: El Endpoint (Controlador)
+El endpoint recibe los Query Params y construye la respuesta paginada.
 
-**Ejemplo (`api/students.py`):**
+**Archivo:** `api/students.py`
 ```python
 @router.get("/", response_model=PaginatedResponse[StudentResponse])
-async def list_students(
+async def read_students(
     page: int = Query(1, ge=1),
     per_page: int = Query(10, ge=1, le=100),
     q: Optional[str] = None
@@ -82,8 +73,7 @@ async def list_students(
     items, total = await student_service.get_students(page, per_page, q)
     
     # Calcular total de páginas
-    import math
-    total_pages = math.ceil(total / per_page)
+    total_pages = math.ceil(total / per_page) if per_page > 0 else 0
     
     return {
         "total": total,
@@ -94,65 +84,187 @@ async def list_students(
     }
 ```
 
----
+### Paso D: Ejemplo de Request y Response
 
-## 3. Guía para Frontend
-
-### Paso A: Construcción de la URL
-Nunca filtres en el cliente (usando `array.filter()`) si hay muchos datos. Envía los parámetros al servidor.
-
-**Ejemplo de Request:**
-```javascript
-// GET /api/v1/students?page=1&per_page=10&q=juan
-const params = new URLSearchParams({
-  page: currentPage,
-  per_page: 10,
-  q: searchTerm // "juan"
-});
-
-const response = await fetch(`/api/v1/students?${params}`);
-const result = await response.json();
+**Request (Lo que envía el Frontend):**
+```http
+GET /api/v1/students/?page=1&per_page=2&q=juan HTTP/1.1
+Host: api.kyc.com
 ```
 
-### Paso B: Manejo de la Búsqueda (Debounce)
-Cuando el usuario escribe en el buscador, no hagas una petición por cada letra. Espera a que deje de escribir.
+**Response (Lo que devuelve el Backend):**
+```json
+{
+  // --- METADATA (Información de Paginación) ---
+  "total": 45,            // Hay 45 registros en total en la DB
+  "page": 1,              // Página actual
+  "per_page": 2,          // Tamaño de página solicitado
+  "total_pages": 23,      // Total de páginas disponibles
 
-**Patrón Recomendado:**
-1. Usuario escribe "J"... (esperar 300ms)
-2. Usuario escribe "u"... (esperar 300ms)
-3. Usuario escribe "an" -> (Pasaron 300ms) -> **Hacer Petición**.
+  // --- DATA (Los registros reales) ---
+  "data": [
+    {
+      "id": "507f1f77bcf86cd799439011",
+      "nombre": "Juan Pérez",
+      "carnet": "1234567",
+      "email": "juan@email.com",
+      "activo": true
+    },
+    {
+      "id": "507f1f77bcf86cd799439022",
+      "nombre": "Juan Gabriel",
+      "carnet": "7654321",
+      "email": "juanga@email.com",
+      "activo": true
+    }
+  ]
+}
+```
 
-### Paso C: Renderizado de Paginación
-Usa los metadatos de la respuesta para dibujar los botones.
+---
 
-```javascript
-// Datos recibidos del backend
-const { total_pages, page } = result;
+## 3. Frontend (Svelte)
 
-// Renderizar
-return (
-  <div>
-    <button disabled={page === 1} onClick={() => setPage(page - 1)}>
+En Svelte, aprovechamos la reactividad (`$:`) para recargar datos automáticamente cuando cambian los filtros.
+
+### Paso A: Estructura del Componente (`StudentList.svelte`)
+
+```html
+<script>
+  import { onMount } from 'svelte';
+  
+  // 1. Estado Local
+  let students = [];
+  let total = 0;
+  let totalPages = 0;
+  
+  // 2. Parámetros de Filtro (Reactivos)
+  let page = 1;
+  let perPage = 10;
+  let searchQuery = "";
+  let loading = false;
+
+  // 3. Función de Carga de Datos
+  async def loadStudents() {
+    loading = true;
+    try {
+      // Construir URL con parámetros
+      const params = new URLSearchParams({
+        page: page.toString(),
+        per_page: perPage.toString(),
+      });
+      
+      if (searchQuery) {
+        params.append('q', searchQuery);
+      }
+
+      const res = await fetch(`/api/v1/students/?${params}`);
+      const data = await res.json();
+
+      // Actualizar estado
+      students = data.data;
+      total = data.total;
+      totalPages = data.total_pages;
+    } catch (error) {
+      console.error("Error cargando estudiantes:", error);
+    } finally {
+      loading = false;
+    }
+  }
+
+  // 4. Reactividad: Recargar cuando cambia page o searchQuery
+  // Svelte ejecutará esto automáticamente si page o searchQuery cambian
+  $: {
+    loadStudents(page, searchQuery);
+  }
+
+  // 5. Manejo de Búsqueda (Debounce opcional pero recomendado)
+  let timer;
+  const handleSearch = (e) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      searchQuery = e.target.value;
+      page = 1; // Resetear a página 1 al buscar
+    }, 300); // Esperar 300ms
+  };
+</script>
+
+<!-- VISTA -->
+<div class="container">
+  <!-- Buscador -->
+  <input 
+    type="text" 
+    placeholder="Buscar por nombre, carnet..." 
+    on:input={handleSearch}
+    class="search-input"
+  />
+
+  <!-- Tabla -->
+  {#if loading}
+    <p>Cargando...</p>
+  {:else}
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Carnet</th>
+          <th>Email</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each students as student}
+          <tr>
+            <td>{student.nombre}</td>
+            <td>{student.carnet}</td>
+            <td>{student.email}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  {/if}
+
+  <!-- Paginación -->
+  <div class="pagination">
+    <button 
+      disabled={page === 1} 
+      on:click={() => page--}>
       Anterior
     </button>
     
-    <span>Página {page} de {total_pages}</span>
+    <span>Página {page} de {totalPages}</span>
     
-    <button disabled={page === total_pages} onClick={() => setPage(page + 1)}>
+    <button 
+      disabled={page >= totalPages} 
+      on:click={() => page++}>
       Siguiente
     </button>
   </div>
-);
+</div>
+
+<style>
+  .pagination {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    align-items: center;
+  }
+</style>
 ```
+
+### Paso B: Claves de la Implementación en Svelte
+
+1.  **Reactividad (`$:`)**: Usamos el bloque reactivo `$: { loadStudents(...) }` para que cualquier cambio en `page` dispare automáticamente una nueva petición. No hace falta llamar a `loadStudents` manualmente en los botones.
+2.  **Resetear Página**: Al escribir en el buscador (`handleSearch`), es vital hacer `page = 1`. Si estás en la página 10 y buscas "Juan", es probable que "Juan" solo tenga 1 página de resultados, por lo que la página 10 estaría vacía.
+3.  **Debounce**: El `setTimeout` en `handleSearch` evita bombardear al backend con peticiones por cada letra que escribe el usuario.
 
 ---
 
 ## 4. Resumen de Reglas de Oro
 
-1.  **Siempre devuelve el `total`**: El frontend necesita saber cuántos registros hay en total para calcular las páginas.
-2.  **Usa `regex` con `$options: "i"`**: Para que la búsqueda no distinga entre mayúsculas y minúsculas ("Juan" == "juan").
-3.  **Limita el `per_page`**: No permitas que pidan 1 millón de registros. Pon un tope (ej: `le=100`).
-4.  **Resetea la página al filtrar**: Si el usuario busca algo nuevo, automáticamente envíalo a la `page=1`.
+1.  **Backend**: Siempre devuelve `total_pages` y `total`. El frontend los necesita para saber cuándo deshabilitar el botón "Siguiente".
+2.  **Frontend**: Usa `URLSearchParams` para construir la query string de forma segura.
+3.  **UX**: Muestra un indicador de carga (`loading`) mientras llegan los datos para que el usuario sepa que algo está pasando.
+4.  **Svelte**: Aprovecha la sintaxis reactiva `$:`. Es mucho más limpia que usar `useEffect` (React) o watchers manuales.
 
 ---
 **Fin de la Guía**
