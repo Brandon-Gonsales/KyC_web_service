@@ -121,6 +121,12 @@ class EnrollmentResponse(BaseModel):
         description="Detalles sugeridos para el próximo pago (concepto, monto, cuota)"
     )
     
+    # Información de Progreso de Cuotas (Calculado)
+    cuotas_pagadas_info: Optional[dict] = Field(
+        None,
+        description="Progreso de pago de cuotas (cuotas_pagadas, cuotas_totales, porcentaje)"
+    )
+    
     created_at: datetime
     updated_at: datetime
     
@@ -140,10 +146,20 @@ class EnrollmentResponse(BaseModel):
                 "descuento_curso_aplicado": 10.0,
                 "descuento_personalizado": 5.0,
                 "total_a_pagar": 2565.0,
-                "total_pagado": 0.0,
-                "saldo_pendiente": 2565.0,
+                "total_pagado": 1000.0,
+                "saldo_pendiente": 1565.0,
                 "fecha_inscripcion": "2024-12-11T10:00:00",
-                "estado": "pendiente_pago",
+                "estado": "activo",
+                "siguiente_pago": {
+                    "concepto": "Cuota 3",
+                    "numero_cuota": 3,
+                    "monto_sugerido": 413.0
+                },
+                "cuotas_pagadas_info": {
+                    "cuotas_pagadas": 2,
+                    "cuotas_totales": 5,
+                    "porcentaje": 40.0
+                },
                 "created_at": "2024-12-11T10:00:00",
                 "updated_at": "2024-12-11T10:00:00"
             }

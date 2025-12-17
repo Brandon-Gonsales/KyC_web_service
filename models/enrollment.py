@@ -265,5 +265,65 @@ class Enrollment(MongoBaseModel):
             "monto_sugerido": round(self.saldo_pendiente, 2)
         }
     
+    @property
+    def cuotas_pagadas_info(self) -> dict:
+        """
+        Calcula el progreso de pago de cuotas (sin incluir matrícula).
+        
+        Útil para mostrar en el frontend: "Cuotas: 8/12 (66.67%)"
+        
+        Returns:
+            dict: {
+                "cuotas_pagadas": int,   # Cuotas completas pagadas (ej: 8)
+                "cuotas_totales": int,   # Total de cuotas del curso (ej: 12)
+                "porcentaje": float      # Porcentaje de avance (ej: 66.67)
+            }
+        
+        Ejemplo:
+            >>> enrollment.cuotas_pagadas_info
+            {
+                "cuotas_pagadas": 8,
+                "cuotas_totales": 12,
+                "porcentaje": 66.67
+            }
+        """
+        # Si no hay cuotas definidas, retornar 0/0
+        if self.cantidad_cuotas == 0:
+            return {
+                "cuotas_pagadas": 0,
+                "cuotas_totales": 0,
+                "porcentaje": 0.0
+            }
+        
+        # Cuánto se ha pagado a cuotas (excluyendo matrícula)
+        pagado_a_cuotas = max(0.0, self.total_pagado - self.costo_matricula)
+        
+        # Total que debe pagar solo en cuotas
+        total_a_pagar_cuotas = self.total_a_pagar - self.costo_matricula
+        
+        # Monto de cada cuota
+        if total_a_pagar_cuotas > 0:
+            monto_por_cuota = total_a_pagar_cuotas / self.cantidad_cuotas
+        else:
+            monto_por_cuota = 0
+        
+        # Cuántas cuotas completas se han pagado
+        if monto_por_cuota > 0:
+            cuotas_pagadas = int(pagado_a_cuotas / monto_por_cuota)
+        else:
+            cuotas_pagadas = 0
+        
+        # No puede exceder el total de cuotas
+        cuotas_pagadas = min(cuotas_pagadas, self.cantidad_cuotas)
+        
+        # Calcular porcentaje
+        porcentaje = (cuotas_pagadas / self.cantidad_cuotas * 100) if self.cantidad_cuotas > 0 else 0.0
+        
+        return {
+            "cuotas_pagadas": cuotas_pagadas,
+            "cuotas_totales": self.cantidad_cuotas,
+            "porcentaje": round(porcentaje, 2)
+        }
+    
     class Settings:
         name = "enrollments"
