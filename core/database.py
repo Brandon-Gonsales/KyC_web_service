@@ -15,6 +15,7 @@ from models.student import Student
 from models.course import Course
 from models.enrollment import Enrollment
 from models.payment import Payment
+from models.payment_config import PaymentConfig
 from models.discount import Discount
 
 async def init_db():
@@ -37,6 +38,7 @@ async def init_db():
             Course,
             Enrollment,
             Payment,
+            PaymentConfig,
             Discount,
         ]
     )

@@ -33,6 +33,7 @@ from .student import Student
 from .course import Course
 from .enrollment import Enrollment
 from .payment import Payment
+from .payment_config import PaymentConfig
 from .discount import Discount
 from .title import Title
 from .user import User
@@ -57,6 +58,7 @@ __all__ = [
     "Course",
     "Enrollment",
     "Payment",
+    "PaymentConfig",
     "Discount",
     "Title",
     "User",
