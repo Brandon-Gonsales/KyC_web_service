@@ -129,7 +129,7 @@ class CourseResponse(BaseModel):
     fecha_fin: Optional[datetime]
     activo: bool
     
-    requisitos: List[dict] = Field(
+    requisitos: List[RequisitoTemplateCreate] = Field(
         default_factory=list,
         description="Requisitos del curso"
     )
