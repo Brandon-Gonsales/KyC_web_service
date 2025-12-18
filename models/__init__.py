@@ -27,6 +27,7 @@ from .enums import (
     EstadoPago,
     TipoTitulo,
     TipoEstudiante,
+    EstadoRequisito,  # Nuevo
     UserRole
 )
 from .student import Student
@@ -37,6 +38,7 @@ from .payment_config import PaymentConfig
 from .discount import Discount
 from .title import Title
 from .user import User
+from .requisito import Requisito, RequisitoTemplate  # Nuevo
 
 __all__ = [
     # Base
@@ -51,6 +53,7 @@ __all__ = [
     "EstadoPago",
     "TipoTitulo",
     "TipoEstudiante",
+    "EstadoRequisito",  # Nuevo
     "UserRole",
     
     # Models
@@ -62,4 +65,8 @@ __all__ = [
     "Discount",
     "Title",
     "User",
+    
+    # Embedded Models
+    "Requisito",          # Nuevo
+    "RequisitoTemplate",  # Nuevo
 ]

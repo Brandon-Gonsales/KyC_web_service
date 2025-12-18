@@ -17,7 +17,6 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, EmailStr, field_validator
 from models.enums import TipoEstudiante
 from models.base import PyObjectId
-from models.title import Title
 
 
 class ChangePassword(BaseModel):
@@ -108,15 +107,10 @@ class StudentResponse(BaseModel):
     foto_url: Optional[str] = None
     es_estudiante_interno: Optional[TipoEstudiante] = None
     
-    # Documentos
-    ci_url: Optional[str] = None
-    afiliacion_url: Optional[str] = None
-    cv_url: Optional[str] = None
     
     # Estado y Metadata
     activo: bool
     lista_cursos_ids: List[PyObjectId] = []
-    titulo: Optional[Title] = None
     created_at: datetime
     updated_at: datetime
     
@@ -139,19 +133,7 @@ class StudentResponse(BaseModel):
                 "es_estudiante_interno": "interno",
                 "activo": True,
                 "lista_cursos_ids": [],
-                "titulo": {
-                    "titulo": "Licenciatura en Ingeniería de Sistemas",
-                    "numero_titulo": "123456",
-                    "año_expedicion": "2020",
-                    "universidad": "Universidad Mayor de San Andrés",
-                    "titulo_url": "https://storage.example.com/titulos/brandon.pdf",
-                    "estado": "verificado",
-                    "verificado_por": "admin",
-                    "fecha_verificacion": "2024-12-08T17:00:00"
-                },
-                "ci_url": "https://storage.example.com/docs/ci_brandon.pdf",
-                "afiliacion_url": "https://storage.example.com/docs/afiliacion_brandon.pdf",
-                "cv_url": "https://storage.example.com/docs/cv_brandon.pdf",
+
                 "created_at": "2024-03-20T10:00:00",
                 "updated_at": "2024-03-20T10:00:00"
             }
@@ -168,13 +150,9 @@ class StudentUpdateSelf(BaseModel):
     
     Permite actualizar información personal básica.
     
-    Para subir archivos, usar los endpoints dedicados:
-    - POST /students/me/upload/photo
-    - POST /students/me/upload/cv
-    - POST /students/me/upload/carnet
-    - POST /students/me/upload/afiliacion
-    
-    Nota: No se permite cambiar la contraseña desde este endpoint.
+    Nota: 
+    - No se permite cambiar la contraseña desde este endpoint (usar POST /auth/change-password)
+    - Para subir foto de perfil: POST /students/me/upload/photo
     """
     
     celular: Optional[str] = None
@@ -198,12 +176,7 @@ class StudentUpdateAdmin(BaseModel):
     
     Permite actualizar todos los campos excepto: id, created_at, updated_at
     
-    Para subir archivos, usar los endpoints dedicados:
-    - POST /students/{id}/upload/photo
-    - POST /students/{id}/upload/cv
-    - POST /students/{id}/upload/carnet
-    - POST /students/{id}/upload/afiliacion
-    - POST /students/{id}/upload/titulo (solo admins)
+    Nota: Los documentos ahora se manejan en Enrollment.requisitos
     """
     registro: Optional[str] = None
     password: Optional[str] = Field(None, min_length=5)
@@ -217,7 +190,6 @@ class StudentUpdateAdmin(BaseModel):
     es_estudiante_interno: Optional[TipoEstudiante] = None
     activo: Optional[bool] = None
     lista_cursos_ids: Optional[List[PyObjectId]] = None
-    titulo: Optional[Title] = None
     
     class Config:
         schema_extra = {
@@ -234,17 +206,7 @@ class StudentUpdateAdmin(BaseModel):
                 "es_estudiante_interno": "externo",
                 "activo": False,
                 "lista_cursos_ids": [],
-                "titulo": {
-                    "titulo": "Licenciatura en Ingeniería de Sistemas",
-                    "numero_titulo": "123456",
-                    "año_expedicion": "2020",
-                    "universidad": "Universidad Mayor de San Andrés",
-                    "titulo_url": "https://storage.example.com/titulos/juan.pdf",
-                    "estado": "verificado",
-                    "verificado_por": "admin",
-                    "fecha_verificacion": "2024-12-08T17:00:00",
-                    "motivo_rechazo": None
-                }
+
             }
         }
 

@@ -15,11 +15,13 @@ Permisos:
 """
 
 from typing import List, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Path
 from models.enrollment import Enrollment
 from models.student import Student
 from models.user import User
-from models.enums import EstadoInscripcion
+from models.enums import EstadoInscripcion, EstadoRequisito
+from core.cloudinary_utils import upload_image, upload_pdf
+from schemas.requisito import RequisitoResponse, RequisitoRechazarRequest, RequisitoListResponse
 from schemas.enrollment import (
     EnrollmentCreate,
     EnrollmentResponse,
@@ -251,3 +253,155 @@ async def get_enrollments_by_course(
     """
     enrollments = await enrollment_service.get_enrollments_by_course(course_id)
     return enrollments
+
+
+# ========================================================================
+# ENDPOINTS DE REQUISITOS
+# ========================================================================
+
+@router.get("/{id}/requisitos", response_model=RequisitoListResponse)
+async def listar_requisitos(
+    *,
+    id: PydanticObjectId,
+    current_user: User | Student = Depends(get_current_user)
+) -> Any:
+    """
+    Listar todos los requisitos de una inscripción con estadísticas
+    
+    Permisos:
+    - ADMIN: Puede ver requisitos de cualquier enrollment
+    - STUDENT: Solo puede ver requisitos de sus propios enrollments
+    """
+    enrollment = await Enrollment.get(id)
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment no encontrado")
+    
+    if isinstance(current_user, Student):
+        if enrollment.estudiante_id != current_user.id:
+            raise HTTPException(403, "No puedes ver requisitos de otros estudiantes")
+    
+    total = len(enrollment.requisitos)
+    pendientes = sum(1 for r in enrollment.requisitos if r.estado == EstadoRequisito.PENDIENTE)
+    en_proceso = sum(1 for r in enrollment.requisitos if r.estado == EstadoRequisito.EN_PROCESO)
+    aprobados = sum(1 for r in enrollment.requisitos if r.estado == EstadoRequisito.APROBADO)
+    rechazados = sum(1 for r in enrollment.requisitos if r.estado == EstadoRequisito.RECHAZADO)
+    
+    return {
+        "total": total,
+        "pendientes": pendientes,
+        "en_proceso": en_proceso,
+        "aprobados": aprobados,
+        "rechazados": rechazados,
+        "requisitos": enrollment.requisitos
+    }
+
+
+@router.put("/{id}/requisitos/{index}", response_model=RequisitoResponse)
+async def subir_requisito(
+    *,
+    id: PydanticObjectId,
+    index: int = Path(..., ge=0, description="Índice del requisito"),
+    file: UploadFile = File(..., description="Documento PDF o imagen"),
+    current_user: Student = Depends(get_current_user)
+) -> Any:
+    """
+    Subir documento para un requisito específico (solo estudiantes)
+    """
+    if not isinstance(current_user, Student):
+        raise HTTPException(403, "Solo estudiantes")
+    
+    enrollment = await Enrollment.get(id)
+    if not enrollment:
+        raise HTTPException(404, "Enrollment no encontrado")
+    
+    if enrollment.estudiante_id != current_user.id:
+        raise HTTPException(403, "No es tu enrollment")
+    
+    if index >= len(enrollment.requisitos):
+        raise HTTPException(400, f"Índice {index} fuera de rango")
+    
+    try:
+        folder = f"enrollments/{id}/requisitos"
+        descripcion_safe = enrollment.requisitos[index].descripcion.replace(' ', '_').replace('/', '_')
+        public_id = f"req_{index}_{descripcion_safe}"
+        
+        image_types = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+        
+        if file.content_type in image_types:
+            documento_url = await upload_image(file, folder, public_id)
+        elif file.content_type == "application/pdf":
+            documento_url = await upload_pdf(file, folder, public_id)
+        else:
+            raise HTTPException(400, f"Formato no permitido: {file.content_type}")
+        
+        enrollment.requisitos[index].subir_documento(documento_url)
+        await enrollment.save()
+        
+        return enrollment.requisitos[index]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Error: {str(e)}")
+
+
+@router.put("/{id}/requisitos/{index}/aprobar", response_model=RequisitoResponse)
+async def aprobar_requisito(
+    *,
+    id: PydanticObjectId,
+    index: int = Path(..., ge=0, description="Índice del requisito"),
+    current_user: User = Depends(require_admin)
+) -> Any:
+    """
+    Aprobar un requisito (solo admins)
+    """
+    enrollment = await Enrollment.get(id)
+    if not enrollment:
+        raise HTTPException(404, "Enrollment no encontrado")
+    
+    if index >= len(enrollment.requisitos):
+        raise HTTPException(400, f"Índice {index} fuera de rango")
+    
+    requisito = enrollment.requisitos[index]
+    
+    if not requisito.url:
+        raise HTTPException(400, "No se puede aprobar sin documento")
+    
+    if requisito.estado not in [EstadoRequisito.EN_PROCESO, EstadoRequisito.RECHAZADO]:
+        raise HTTPException(400, f"No se puede aprobar en estado {requisito.estado}")
+    
+    enrollment.requisitos[index].aprobar(current_user.username)
+    await enrollment.save()
+    
+    return enrollment.requisitos[index]
+
+
+@router.put("/{id}/requisitos/{index}/rechazar", response_model=RequisitoResponse)
+async def rechazar_requisito(
+    *,
+    id: PydanticObjectId,
+    index: int = Path(..., ge=0, description="Índice del requisito"),
+    rechazo: RequisitoRechazarRequest,
+    current_user: User = Depends(require_admin)
+) -> Any:
+    """
+    Rechazar un requisito con motivo (solo admins)
+    """
+    enrollment = await Enrollment.get(id)
+    if not enrollment:
+        raise HTTPException(404, "Enrollment no encontrado")
+    
+    if index >= len(enrollment.requisitos):
+        raise HTTPException(400, f"Índice {index} fuera de rango")
+    
+    requisito = enrollment.requisitos[index]
+    
+    if not requisito.url:
+        raise HTTPException(400, "No se puede rechazar sin documento")
+    
+    if requisito.estado != EstadoRequisito.EN_PROCESO:
+        raise HTTPException(400, f"No se puede rechazar en estado {requisito.estado}")
+    
+    enrollment.requisitos[index].rechazar(current_user.username, rechazo.motivo)
+    await enrollment.save()
+    
+    return enrollment.requisitos[index]

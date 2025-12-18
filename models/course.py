@@ -21,6 +21,7 @@ from typing import Optional, List
 from pydantic import Field, validator
 from .base import MongoBaseModel, PyObjectId
 from .enums import TipoCurso, Modalidad
+from .requisito import RequisitoTemplate
 
 
 class Course(MongoBaseModel):
@@ -206,6 +207,15 @@ class Course(MongoBaseModel):
     activo: bool = Field(
         default=True,
         description="Si el curso está activo y acepta inscripciones"
+    )
+    
+    # ========================================================================
+    # REQUISITOS (DOCUMENTACIÓN)
+    # ========================================================================
+    
+    requisitos: List['RequisitoTemplate'] = Field(
+        default_factory=list,
+        description="Lista de requisitos/documentos que debe presentar el estudiante al inscribirse"
     )
     
     # ========================================================================

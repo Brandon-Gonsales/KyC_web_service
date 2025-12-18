@@ -260,6 +260,44 @@ class TipoEstudiante(str, Enum):
     EXTERNO = "externo"
 
 
+class EstadoRequisito(str, Enum):
+    """
+    Estados de validación de un requisito/documento
+    
+    ¿Por qué necesitamos esto?
+    -------------------------
+    Los requisitos de cada curso (CV, carnet, títulos, etc.) deben ser
+    revisados y validados por administradores. Este enum rastrea el estado
+    de cada requisito individual en un enrollment.
+    
+    Valores:
+    -------
+    - PENDIENTE: El estudiante aún no ha subido el documento
+    - EN_PROCESO: Documento subido, esperando revisión del admin
+    - APROBADO: Admin validó y aprobó el documento
+    - RECHAZADO: Admin rechazó el documento (debe corregirse y resubirse)
+    
+    Flujo típico:
+    ------------
+    PENDIENTE → EN_PROCESO (estudiante sube) → APROBADO (admin aprueba)
+                                              → RECHAZADO (admin rechaza)
+    
+    Después de RECHAZADO:
+    - El estudiante puede volver a subir el documento
+    - Vuelve a estado EN_PROCESO
+    
+    Uso en el sistema:
+    -----------------
+    - Rastrear progreso de documentación del estudiante
+    - Validar que todos los requisitos estén aprobados antes de titular
+    - Notificar al estudiante qué documentos faltan o fueron rechazados
+    """
+    PENDIENTE = "pendiente"        # No subido aún
+    EN_PROCESO = "en_proceso"      # Subido, esperando revisión
+    APROBADO = "aprobado"          # Admin aprobó
+    RECHAZADO = "rechazado"        # Admin rechazó, debe resubir
+
+
 class UserRole(str, Enum):
     """
     Roles de usuario para control de acceso (RBAC)

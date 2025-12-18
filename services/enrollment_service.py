@@ -89,7 +89,10 @@ async def create_enrollment(enrollment_in: EnrollmentCreate, admin_username: str
         
     total_final = total_con_descuento_curso - (total_con_descuento_curso * descuento_personal / 100)
     
-    # 7. Crear inscripción con snapshot de precios
+    # 7. Copiar requisitos del curso y convertirlos a Requisito con estado PENDIENTE
+    requisitos_enrollment = [template.to_requisito() for template in course.requisitos]
+    
+    # 8. Crear inscripción con snapshot de precios
     enrollment = Enrollment(
         estudiante_id=enrollment_in.estudiante_id,
         curso_id=enrollment_in.curso_id,
@@ -108,17 +111,20 @@ async def create_enrollment(enrollment_in: EnrollmentCreate, admin_username: str
         
         total_a_pagar=round(total_final, 2),
         saldo_pendiente=round(total_final, 2),
-        estado=EstadoInscripcion.PENDIENTE_PAGO
+        estado=EstadoInscripcion.PENDIENTE_PAGO,
+        
+        # Requisitos (copiados del curso)
+        requisitos=requisitos_enrollment
     )
     
     await enrollment.insert()
     
-    # 8. Agregar estudiante a la lista de inscritos del curso
+    # 9. Agregar estudiante a la lista de inscritos del curso
     if enrollment_in.estudiante_id not in course.inscritos:
         course.inscritos.append(enrollment_in.estudiante_id)
         await course.save()
     
-    # 9. Agregar curso a la lista de cursos del estudiante
+    # 10. Agregar curso a la lista de cursos del estudiante
     if enrollment_in.curso_id not in student.lista_cursos_ids:
         student.lista_cursos_ids.append(enrollment_in.curso_id)
         await student.save()

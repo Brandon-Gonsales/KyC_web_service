@@ -7,10 +7,11 @@ Colección MongoDB: enrollments
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import Field, field_validator
 from .base import MongoBaseModel, PyObjectId
 from .enums import EstadoInscripcion, TipoEstudiante
+from .requisito import Requisito
 
 
 class Enrollment(MongoBaseModel):
@@ -144,6 +145,15 @@ class Enrollment(MongoBaseModel):
     estado: EstadoInscripcion = Field(
         default=EstadoInscripcion.PENDIENTE_PAGO,
         description="Estado actual de la inscripción"
+    )
+    
+    # ========================================================================
+    # REQUISITOS (DOCUMENTACIÓN)
+    # ========================================================================
+    
+    requisitos: List['Requisito'] = Field(
+        default_factory=list,
+        description="Lista de requisitos/documentos con su estado de validación"
     )
     
     # ========================================================================

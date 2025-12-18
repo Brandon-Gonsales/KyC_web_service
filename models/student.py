@@ -20,7 +20,6 @@ from typing import Optional, List
 from pydantic import Field, EmailStr
 from .base import MongoBaseModel, PyObjectId
 from .enums import TipoEstudiante
-from .title import Title
 
 
 class Student(MongoBaseModel):
@@ -51,16 +50,13 @@ class Student(MongoBaseModel):
        - carrera: Carrera de pregrado
        - es_estudiante_interno: ¿Es estudiante de esta universidad?
        - lista_cursos_ids: Cursos en los que está inscrito
-       - titulo: Título en provisión nacional (Embebido)
     
-    5. DOCUMENTOS (URLs):
-       - ci_url: PDF del carnet de identidad
-       - afiliacion_url: PDF de afiliación profesional
-       - cv_url: PDF del currículum vitae
-    
-    6. ESTADO:
+    5. ESTADO:
        - activo: ¿Puede usar el sistema?
        - fecha_registro: Cuándo se registró
+    
+    NOTA: Los documentos (CV, CI, títulos, etc.) ahora se manejan
+    en Enrollment.requisitos según los requisitos definidos por cada curso.
     
     ¿Por qué es_estudiante_interno es importante?
     --------------------------------------------
@@ -101,10 +97,7 @@ class Student(MongoBaseModel):
     es_estudiante_interno: Optional[TipoEstudiante] = Field(None,description=("Tipo de estudiante: INTERNO (de la universidad) o EXTERNO (público general). "))
     activo: bool = Field(default=True,description="Si el estudiante puede acceder al sistema y realizar acciones")
     lista_cursos_ids: List[PyObjectId] = Field(default_factory=list,description="Lista de IDs de cursos en los que el estudiante está inscrito")
-    titulo: Optional[Title] = Field(None, description="Título obtenido por el estudiante (Embebido)")
-    ci_url: Optional[str] = Field(None,description="URL del PDF del carnet de identidad")
-    afiliacion_url: Optional[str] = Field(None,description="URL del PDF de afiliacion a colegio profesional para descuentos")
-    cv_url: Optional[str] = Field(None,description="URL del PDF de currículum vitae")
+
 
     
     class Settings:
@@ -127,15 +120,6 @@ class Student(MongoBaseModel):
                 "es_estudiante_interno": "interno",
                 "activo": True,
                 "lista_cursos_ids": [],
-                "titulo": {
-                    "titulo": "Licenciatura en Ingeniería de Sistemas",
-                    "numero_titulo": "123456",
-                    "año_expedicion": "2020",
-                    "universidad": "Universidad Mayor de San Andrés",
-                    "titulo_url": "https://storage.example.com/titulos/brandon.pdf"
-                },
-                "ci_url": "https://storage.example.com/docs/ci_brandon.pdf",
-                "afiliacion_url": "https://storage.example.com/docs/afiliacion_brandon.pdf",
-                "cv_url": "https://storage.example.com/docs/cv_brandon.pdf"
+
             }
         }
