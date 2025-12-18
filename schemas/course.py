@@ -17,6 +17,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, validator
 from models.enums import TipoCurso, Modalidad, EstadoInscripcion, TipoEstudiante
 from models.base import PyObjectId
+from schemas.requisito import RequisitoTemplateCreate
 
 
 class CourseCreate(BaseModel):
@@ -64,6 +65,12 @@ class CourseCreate(BaseModel):
     fecha_fin: Optional[datetime] = None
     activo: bool = True
     
+    # Requisitos
+    requisitos: List[RequisitoTemplateCreate] = Field(
+        default_factory=list,
+        description="Lista de requisitos que debe cumplir el estudiante al inscribirse"
+    )
+    
     class Config:
         schema_extra = {
             "example": {
@@ -80,7 +87,12 @@ class CourseCreate(BaseModel):
                 "observacion": "Incluye certificación internacional",
                 "fecha_inicio": "2024-03-01T00:00:00",
                 "fecha_fin": "2024-08-31T00:00:00",
-                "activo": True
+                "activo": True,
+                "requisitos": [
+                    {"descripcion": "CV actualizado (máximo 2 años)"},
+                    {"descripcion": "Fotocopia de carnet de identidad"},
+                    {"descripcion": "Título profesional o certificado de egreso"}
+                ]
             }
         }
 
@@ -117,6 +129,11 @@ class CourseResponse(BaseModel):
     fecha_fin: Optional[datetime]
     activo: bool
     
+    requisitos: List[dict] = Field(
+        default_factory=list,
+        description="Requisitos del curso"
+    )
+    
     created_at: datetime
     updated_at: datetime
     
@@ -143,6 +160,10 @@ class CourseResponse(BaseModel):
                 "fecha_inicio": "2024-03-01T00:00:00",
                 "fecha_fin": "2024-08-31T00:00:00",
                 "activo": True,
+                "requisitos": [
+                    {"descripcion": "CV actualizado"},
+                    {"descripcion": "Fotocopia de carnet"}
+                ],
                 "created_at": "2024-01-15T10:30:00",
                 "updated_at": "2024-01-15T10:30:00"
             }
@@ -181,6 +202,8 @@ class CourseUpdate(BaseModel):
     fecha_inicio: Optional[datetime] = None
     fecha_fin: Optional[datetime] = None
     activo: Optional[bool] = None
+    
+    requisitos: Optional[List[RequisitoTemplateCreate]] = None
     
     class Config:
         schema_extra = {
