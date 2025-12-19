@@ -87,7 +87,7 @@ class CourseCreate(BaseModel):
                 "observacion": "Incluye materiales didácticos y certificación internacional",
                 "fecha_inicio": "2024-03-15T00:00:00",
                 "fecha_fin": "2024-09-30T00:00:00",
-                "activo": true,
+                "activo": True,
                 "requisitos": [
                     {"descripcion": "Curriculum Vitae actualizado"},
                     {"descripcion": "Fotocopia de Cédula de Identidad (ambos lados)"},
@@ -161,7 +161,7 @@ class CourseResponse(BaseModel):
                 "inscritos": ["507f1f77bcf86cd799439011"],
                 "fecha_inicio": "2024-03-15T00:00:00",
                 "fecha_fin": "2024-09-30T00:00:00",
-                "activo": true,
+                "activo": True,
                 "requisitos": [
                     {"descripcion": "Curriculum Vitae actualizado"},
                     {"descripcion": "Fotocopia de Cédula de Identidad"}
@@ -212,7 +212,7 @@ class CourseUpdate(BaseModel):
             "example": {
                 "nombre_programa": "Diplomado en Sistemas de Gestión de Calidad ISO 9001:2015 y 14001:2015",
                 "costo_total_interno": 3800.0,
-                "activo": true
+                "activo": True
             }
         }
     }

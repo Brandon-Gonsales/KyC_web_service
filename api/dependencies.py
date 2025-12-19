@@ -25,7 +25,7 @@ async def get_current_user(
     """
     Obtener el usuario actual desde el token JWT
     
-    En modo desarrollo (DEVELOPMENT_MODE=true), retorna un usuario admin mock
+    En modo desarrollo (DEVELOPMENT_MODE=True), retorna un usuario admin mock
     sin requerir autenticación.
     
     Returns:

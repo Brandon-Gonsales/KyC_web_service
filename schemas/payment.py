@@ -219,7 +219,7 @@ class PaymentWithDetails(PaymentResponse):
     """
     Schema para mostrar pago con detalles de Student, Course y Enrollment
     
-    Uso: GET /payments/{id}?include_details=true
+    Uso: GET /payments/{id}?include_details=True
     """
     
     # Datos del estudiante

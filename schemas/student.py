@@ -207,7 +207,7 @@ class StudentUpdateAdmin(BaseModel):
                 "domicilio": "Calle Junín #789, Cochabamba, Bolivia",
                 "fecha_nacimiento": "1995-08-22T00:00:00",
                 "es_estudiante_interno": "externo",
-                "activo": true,
+                "activo": True,
                 "lista_cursos_ids": ["507f1f77bcf86cd799439012"]
             }
         }

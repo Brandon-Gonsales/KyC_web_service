@@ -65,7 +65,7 @@ class UserResponse(BaseModel):
                 "username": "admin.academico",
                 "email": "academico@kyc.edu.bo",
                 "rol": "admin",
-                "activo": true,
+                "activo": True,
                 "ultimo_acceso": "2024-12-18T16:45:00",
                 "created_at": "2024-02-01T09:00:00",
                 "updated_at": "2024-12-18T16:45:00"
@@ -89,7 +89,7 @@ class UserUpdate(BaseModel):
         "json_schema_extra": {
             "example": {
                 "email": "nuevoemail@kyc.edu.bo",
-                "activo": false
+                "activo": False
             }
         }
     }

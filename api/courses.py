@@ -41,7 +41,7 @@ async def read_courses(
     
     **Filtros disponibles:**
     - `q`: Búsqueda por nombre o código del curso
-    - `activo`: true/false
+    - `activo`: True/False
     - `tipo_curso`: diplomado, curso, taller, seminario
     - `modalidad`: presencial, virtual, híbrido
     """

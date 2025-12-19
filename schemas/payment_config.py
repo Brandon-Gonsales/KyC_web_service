@@ -164,7 +164,7 @@ class PaymentConfigResponse(BaseModel):
                 "titular": "INSTITUTO KYC - CURSOS DE POSGRADO",
                 "tipo_cuenta": "Caja de Ahorro",
                 "qr_url": "https://res.cloudinary.com/kyc/qr_pago_bnb.png",
-                "is_active": true,
+                "is_active": True,
                 "notas": "Cuenta oficial. Depositar y enviar comprobante por el sistema.",
                 "creado_por": "admin.sistemas",
                 "actualizado_por": "admin.finanzas",

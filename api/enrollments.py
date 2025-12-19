@@ -139,8 +139,8 @@ async def list_enrollments(
         "limit": 10,
         "totalItems": 36,
         "totalPages": 4,
-        "hasNextPage": true,
-        "hasPrevPage": false
+        "hasNextPage": True,
+        "hasPrevPage": False
       }
     }
     ```

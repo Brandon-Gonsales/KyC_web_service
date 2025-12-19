@@ -37,7 +37,7 @@ async def read_students(
     
     **Filtros disponibles:**
     - `q`: Búsqueda por nombre, email, carnet o registro
-    - `activo`: true/false - Filtrar por estado
+    - `activo`: True/False - Filtrar por estado
     - `estado_titulo`: pendiente, verificado, rechazado, sin_titulo
     - `curso_id`: Ver estudiantes de un curso específico
     
@@ -100,7 +100,7 @@ async def create_student(
     
     **Automáticamente:**
     - Password inicial = carnet (el estudiante debe cambiarlo después)
-    - Activo = true
+    - Activo = True
     - Lista de cursos = []
     """
     student = await student_service.create_student(student_in=student_in)

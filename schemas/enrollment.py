@@ -80,7 +80,7 @@ class EnrollmentCreate(BaseModel):
                 "descuento_id": "507f1f77bcf86cd799439088"
             }
         }
-
+    }
 
 class EnrollmentResponse(BaseModel):
     """
@@ -221,7 +221,7 @@ class EnrollmentWithDetails(EnrollmentResponse):
     """
     Schema para mostrar inscripción con detalles de Student y Course
     
-    Uso: GET /enrollments/{id}?include_details=true
+    Uso: GET /enrollments/{id}?include_details=True
     
     Incluye datos calculados adicionales:
     - nombre del estudiante

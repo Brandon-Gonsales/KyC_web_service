@@ -48,7 +48,7 @@ class DiscountCreate(BaseModel):
             "example": {
                 "nombre": "Beca Excelencia Académica 2024",
                 "porcentaje": 30.0,
-                "activo": true
+                "activo": True
             }
         }
     }
@@ -77,7 +77,7 @@ class DiscountResponse(BaseModel):
                 "_id": "507f1f77bcf86cd799439077",
                 "nombre": "Descuento Estudiante Interno",
                 "porcentaje": 10.0,
-                "activo": true,
+                "activo": True,
                 "created_at": "2024-02-15T10:00:00",
                 "updated_at": "2024-02-15T10:00:00"
             }
@@ -101,7 +101,7 @@ class DiscountUpdate(BaseModel):
             "example": {
                 "nombre": "Descuento Estudiante Interno 2024",
                 "porcentaje": 15.0,
-                "activo": true
+                "activo": True
             }
         }
     }
