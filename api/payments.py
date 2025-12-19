@@ -424,3 +424,137 @@ async def get_payments_pendientes(
     """
     payments = await payment_service.get_payments_pendientes()
     return payments
+
+
+@router.get(
+    "/reportes/excel",
+    summary="Generar Reporte Excel de Pagos",
+    responses={
+        200: {"description": "Archivo Excel generado", "content": {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}}},
+        403: {"description": "Sin permisos - Solo Admin"}
+    }
+)
+async def generar_reporte_excel_pagos(
+    *,
+    fecha_desde: Optional[str] = Query(None, description="Fecha inicio (YYYY-MM-DD)"),
+    fecha_hasta: Optional[str] = Query(None, description="Fecha fin (YYYY-MM-DD)"),
+    current_user: User = Depends(require_admin)
+):
+    """
+    Generar reporte Excel de pagos para cruce de datos
+    
+    **Requiere:** Admin o SuperAdmin
+    
+    **Filtros:**
+    - `fecha_desde`: Fecha inicial (YYYY-MM-DD). Si no se especifica, toma el día actual
+    - `fecha_hasta`: Fecha final (YYYY-MM-DD). Si no se especifica, igual a fecha_desde
+    
+    **Columnas del Excel:**
+    1. Nombre del Estudiante
+    2. Fecha
+    3. Moneda (Bs)
+    4. Monto
+    5. Concepto
+    6. Nº de Transacción
+    7. Estado
+    8. Progreso (ej: 7/12)
+    
+    **Retorna:** Archivo Excel para descargar
+    """
+    from datetime import datetime, date
+    from fastapi.responses import StreamingResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill
+    from io import BytesIO
+    from models.enrollment import Enrollment
+    
+    # Procesar fechas
+    if not fecha_desde:
+        fecha_desde = date.today().isoformat()
+    if not fecha_hasta:
+        fecha_hasta = fecha_desde
+    
+    try:
+        fecha_desde_dt = datetime.fromisoformat(fecha_desde)
+        fecha_hasta_dt = datetime.fromisoformat(fecha_hasta).replace(hour=23, minute=59, second=59)
+    except:
+        raise HTTPException(status_code=400, detail="Formato de fecha inválido. Usar YYYY-MM-DD")
+    
+    # Obtener pagos del rango de fechas
+    payments = await Payment.find(
+        Payment.fecha_subida >= fecha_desde_dt,
+        Payment.fecha_subida <= fecha_hasta_dt
+    ).sort("+fecha_subida").to_list()
+    
+    # Crear Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Reporte de Pagos"
+    
+    # Encabezados
+    headers = ["Nombre del Estudiante", "Fecha", "Moneda", "Monto", "Concepto", "Nº de Transacción", "Estado", "Progreso"]
+    ws.append(headers)
+    
+    # Estilo de encabezados
+    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+    
+    # Llenar datos
+    for payment in payments:
+        # Obtener estudiante
+        student = await Student.get(payment.estudiante_id)
+        nombre_estudiante = student.nombre if student and student.nombre else "Sin nombre"
+        
+        # Obtener enrollment con servicio (ya incluye cuotas_pagadas_info calculado)
+        from services import enrollment_service
+        try:
+            enrollment = await enrollment_service.get_enrollment(payment.inscripcion_id)
+            # Usar el campo ya calculado
+            progreso = ""
+            if enrollment and enrollment.cuotas_pagadas_info:
+                cuotas_pagadas = enrollment.cuotas_pagadas_info.get("cuotas_pagadas", 0)
+                cuotas_totales = enrollment.cuotas_pagadas_info.get("cuotas_totales", 0)
+                progreso = f"{cuotas_pagadas}/{cuotas_totales}"
+            elif enrollment:
+                # Fallback si no hay info calculada
+                progreso = f"0/{enrollment.cantidad_cuotas}"
+        except:
+            progreso = ""
+        
+        # Preparar fila
+        row = [
+            nombre_estudiante,
+            payment.fecha_subida.strftime("%Y-%m-%d %H:%M:%S") if payment.fecha_subida else "",
+            "Bs",  # Moneda bolivianos
+            payment.cantidad_pago,
+            payment.concepto or "",
+            payment.numero_transaccion or "",
+            payment.estado_pago.value if payment.estado_pago else "",
+            progreso
+        ]
+        ws.append(row)
+    
+    # Ajustar ancho de columnas
+    column_widths = [30, 20, 10, 12, 20, 25, 15, 12]
+    for i, width in enumerate(column_widths, 1):
+        ws.column_dimensions[chr(64 + i)].width = width
+    
+    # Guardar en BytesIO
+    excel_file = BytesIO()
+    wb.save(excel_file)
+    excel_file.seek(0)
+    
+    # Nombre del archivo
+    filename = f"reporte_pagos_{fecha_desde}_{fecha_hasta}.xlsx"
+    
+    # Retornar archivo
+    return StreamingResponse(
+        excel_file,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
