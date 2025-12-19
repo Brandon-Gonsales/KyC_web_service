@@ -58,17 +58,18 @@ class PaymentConfigCreate(BaseModel):
         description="Notas adicionales"
     )
     
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
-                "numero_cuenta": "1234567890",
-                "banco": "Banco Nacional de Bolivia",
-                "titular": "Universidad Mayor de San Andrés",
-                "tipo_cuenta": "Corriente",
-                "qr_url": "https://res.cloudinary.com/.../qr_pago.png",
-                "notas": "Cuenta oficial para pagos de cursos de posgrado"
+                "numero_cuenta": "10000012345678",
+                "banco": "Banco Nacional de Bolivia (BNB)",
+                "titular": "INSTITUTO KYC - CURSOS DE POSGRADO",
+                "tipo_cuenta": "Caja de Ahorro",
+                "qr_url": "https://res.cloudinary.com/kyc/qr_pago_bnb.png",
+                "notas": "Cuenta oficial para pagos de diplomas y cursos. Depositar y enviar comprobante."
             }
         }
+    }
 
 
 class PaymentConfigUpdate(BaseModel):
@@ -112,13 +113,14 @@ class PaymentConfigUpdate(BaseModel):
         description="Notas adicionales"
     )
     
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
-                "numero_cuenta": "9876543210",
-                "qr_url": "https://res.cloudinary.com/.../qr_nuevo.png"
+                "banco": "Banco Unión S.A.",
+                "numero_cuenta": "10000087654321"
             }
         }
+    }
 
 
 class PaymentConfigResponse(BaseModel):
@@ -157,17 +159,17 @@ class PaymentConfigResponse(BaseModel):
         "json_schema_extra": {
             "example": {
                 "_id": "507f1f77bcf86cd799439099",
-                "numero_cuenta": "1234567890",
-                "banco": "Banco Nacional de Bolivia",
-                "titular": "Universidad Mayor de San Andrés",
-                "tipo_cuenta": "Corriente",
-                "qr_url": "https://res.cloudinary.com/.../qr_pago.png",
-                "is_active": True,
-                "notas": "Cuenta oficial para pagos",
-                "creado_por": "admin1",
-                "actualizado_por": "admin2",
-                "created_at": "2024-12-17T10:00:00",
-                "updated_at": "2024-12-17T14:00:00"
+                "numero_cuenta": "10000012345678",
+                "banco": "Banco Nacional de Bolivia (BNB)",
+                "titular": "INSTITUTO KYC - CURSOS DE POSGRADO",
+                "tipo_cuenta": "Caja de Ahorro",
+                "qr_url": "https://res.cloudinary.com/kyc/qr_pago_bnb.png",
+                "is_active": true,
+                "notas": "Cuenta oficial. Depositar y enviar comprobante por el sistema.",
+                "creado_por": "admin.sistemas",
+                "actualizado_por": "admin.finanzas",
+                "created_at": "2024-02-01T09:00:00",
+                "updated_at": "2024-12-15T10:30:00"
             }
         }
     }

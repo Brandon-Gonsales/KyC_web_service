@@ -31,12 +31,13 @@ class RequisitoTemplateCreate(BaseModel):
         description="Descripción del requisito (ej: 'CV actualizado')"
     )
     
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
-                "descripcion": "CV actualizado (máximo 2 años de antigüedad)"
+                "descripcion": "Curriculum Vitae actualizado (máximo 2 años de antigüedad)"
             }
         }
+    }
 
 
 class RequisitoResponse(BaseModel):
@@ -57,12 +58,12 @@ class RequisitoResponse(BaseModel):
         "from_attributes": True,
         "json_schema_extra": {
             "example": {
-                "descripcion": "CV actualizado",
+                "descripcion": "Curriculum Vitae actualizado",
                 "estado": "aprobado",
-                "url": "https://res.cloudinary.com/.../cv.pdf",
+                "url": "https://res.cloudinary.com/kyc/documentos/cv_maria_lopez.pdf",
                 "motivo_rechazo": None,
-                "revisado_por": "admin1",
-                "fecha_subida": "2024-12-18T10:00:00Z"
+                "revisado_por": "admin.sistemas",
+                "fecha_subida": "2024-12-15T10:30:00"
             }
         }
     }
@@ -82,12 +83,13 @@ class RequisitoRechazarRequest(BaseModel):
         description="Motivo del rechazo"
     )
     
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
-                "motivo": "Documento ilegible. Por favor, suba una imagen más clara o un PDF de mejor calidad"
+                "motivo": "La imagen está borrosa y no se puede leer claramente. Por favor, suba un documento escaneado o una fotografía de mejor calidad."
             }
         }
+    }
 
 
 class RequisitoListResponse(BaseModel):
@@ -127,33 +129,40 @@ class RequisitoListResponse(BaseModel):
         description="Lista completa de requisitos"
     )
     
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
-                "total": 4,
+                "total": 3,
                 "pendientes": 1,
                 "en_proceso": 1,
-                "aprobados": 2,
+                "aprobados": 1,
                 "rechazados": 0,
                 "requisitos": [
                     {
-                        "descripcion": "CV actualizado",
+                        "descripcion": "Curriculum Vitae actualizado",
                         "estado": "aprobado",
-                        "url": "https://...",
-                        "revisado_por": "admin1",
-                        "fecha_subida": "2024-12-18T10:00:00Z"
+                        "url": "https://res.cloudinary.com/kyc/cv_maria.pdf",
+                        "motivo_rechazo": None,
+                        "revisado_por": "admin.sistemas",
+                        "fecha_subida": "2024-12-15T10:30:00"
                     },
                     {
-                        "descripcion": "Fotocopia de carnet",
+                        "descripcion": "Fotocopia de Cédula de Identidad (ambos lados)",
                         "estado": "en_proceso",
-                        "url": "https://...",
-                        "fecha_subida": "2024-12-18T11:00:00Z"
+                        "url": "https://res.cloudinary.com/kyc/ci_maria.pdf",
+                        "motivo_rechazo": None,
+                        "revisado_por": None,
+                        "fecha_subida": "2024-12-16T11:00:00"
                     },
                     {
-                        "descripcion": "Título profesional",
+                        "descripcion": "Título profesional en provisión nacional",
                         "estado": "pendiente",
-                        "url": None
+                        "url": None,
+                        "motivo_rechazo": None,
+                        "revisado_por": None,
+                        "fecha_subida": None
                     }
                 ]
             }
         }
+    }

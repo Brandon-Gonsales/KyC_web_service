@@ -40,14 +40,15 @@ class ChangePassword(BaseModel):
             raise ValueError('Las contraseñas nuevas no coinciden')
         return v
     
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "current_password": "12345678",
-                "new_password": "NuevaPassword123",
-                "confirm_password": "NuevaPassword123"
+                "new_password": "NuevaPassword123!",
+                "confirm_password": "NuevaPassword123!"
             }
         }
+    }
 
 
 class StudentCreate(BaseModel):
@@ -73,20 +74,21 @@ class StudentCreate(BaseModel):
     fecha_nacimiento: Optional[datetime] = Field(None, description="Fecha de nacimiento")
     es_estudiante_interno: Optional[TipoEstudiante] = Field(None, description="Tipo de estudiante: INTERNO o EXTERNO")
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
-                "registro": "220005958",
+                "registro": "20240001",
                 "carnet": "12345678",
-                "nombre": "Brandon Gonsales Coronado",
-                "email": "bgonsalescoronado@gmail.com",
-                "extension": "SC",
-                "celular": "60984296",
-                "domicilio": "Av. Internacional #13, Santa Cruz, Bolivia",
-                "fecha_nacimiento": "2002-03-20T00:00:00",
+                "nombre": "María Fernanda López García",
+                "email": "maria.lopez@estudiante.edu.bo",
+                "extension": "LP",
+                "celular": "70123456",
+                "domicilio": "Av. 6 de Agosto #1234, La Paz, Bolivia",
+                "fecha_nacimiento": "2000-05-15T00:00:00",
                 "es_estudiante_interno": "interno"
             }
         }
+    }
 
 
 
@@ -158,13 +160,14 @@ class StudentUpdateSelf(BaseModel):
     celular: Optional[str] = None
     domicilio: Optional[str] = None
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "celular": "71234567",
-                "domicilio": "Nueva Dirección #456, La Paz, Bolivia"
+                "domicilio": "Av. Libertador Simón Bolívar #456, El Alto, Bolivia"
             }
         }
+    }
 
 
 
@@ -191,22 +194,22 @@ class StudentUpdateAdmin(BaseModel):
     activo: Optional[bool] = None
     lista_cursos_ids: Optional[List[PyObjectId]] = None
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
-                "registro": "220005959",
-                "password": "NuevaPassword123",
-                "nombre": "Juan Carlos Pérez",
-                "email": "juan.perez@example.com",
+                "registro": "20240002",
+                "password": "NuevoPassword456!",
+                "nombre": "Carlos Alberto Rojas Mamani",
+                "email": "carlos.rojas@estudiante.edu.bo",
                 "carnet": "87654321",
-                "extension": "LP",
-                "celular": "77777777",
-                "domicilio": "Calle Falsa #123, La Paz, Bolivia",
-                "fecha_nacimiento": "1990-01-01T00:00:00",
+                "extension": "CB",
+                "celular": "68765432",
+                "domicilio": "Calle Junín #789, Cochabamba, Bolivia",
+                "fecha_nacimiento": "1995-08-22T00:00:00",
                 "es_estudiante_interno": "externo",
-                "activo": False,
-                "lista_cursos_ids": [],
-
+                "activo": true,
+                "lista_cursos_ids": ["507f1f77bcf86cd799439012"]
             }
         }
+    }
 

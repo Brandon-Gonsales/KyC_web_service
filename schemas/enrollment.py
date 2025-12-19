@@ -72,8 +72,8 @@ class EnrollmentCreate(BaseModel):
         description="Porcentaje de descuento manual (solo si no se usa descuento_id, nivel 2)"
     )
     
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "estudiante_id": "507f1f77bcf86cd799439011",
                 "curso_id": "507f1f77bcf86cd799439012",
@@ -143,29 +143,31 @@ class EnrollmentResponse(BaseModel):
                 "estudiante_id": "507f1f77bcf86cd799439011",
                 "curso_id": "507f1f77bcf86cd799439012",
                 "es_estudiante_interno": "interno",
-                "costo_total": 3000.0,
-                "costo_matricula": 500.0,
+                "costo_total": 3500.0,
+                "costo_matricula": 600.0,
                 "cantidad_cuotas": 5,
+                "descuento_curso_id": "507f1f77bcf86cd799439077",
                 "descuento_curso_aplicado": 10.0,
+                "descuento_estudiante_id": "507f1f77bcf86cd799439088",
                 "descuento_personalizado": 5.0,
-                "total_a_pagar": 2565.0,
-                "total_pagado": 1000.0,
-                "saldo_pendiente": 1565.0,
-                "fecha_inscripcion": "2024-12-11T10:00:00",
+                "total_a_pagar": 2992.5,
+                "total_pagado": 1200.0,
+                "saldo_pendiente": 1792.5,
+                "fecha_inscripcion": "2024-12-15T10:00:00",
                 "estado": "activo",
-                "nota_final": 85.5,
+                "nota_final": 88.5,
                 "siguiente_pago": {
-                    "concepto": "Cuota 3",
-                    "numero_cuota": 3,
-                    "monto_sugerido": 413.0
+                    "concepto": "Cuota 2",
+                    "numero_cuota": 2,
+                    "monto_sugerido": 478.5
                 },
                 "cuotas_pagadas_info": {
-                    "cuotas_pagadas": 2,
+                    "cuotas_pagadas": 1,
                     "cuotas_totales": 5,
-                    "porcentaje": 40.0
+                    "porcentaje": 20.0
                 },
-                "created_at": "2024-12-11T10:00:00",
-                "updated_at": "2024-12-11T10:00:00"
+                "created_at": "2024-12-15T10:00:00",
+                "updated_at": "2024-12-15T10:00:00"
             }
         }
     }

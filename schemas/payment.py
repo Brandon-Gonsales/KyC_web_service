@@ -65,24 +65,14 @@ class PaymentCreate(BaseModel):
         description="URL del comprobante/voucher (PDF en Cloudinary)"
     )
     
-    descuento_aplicado: Optional[float] = Field(
-        None,
-        ge=0,
-        description="Descuento aplicado en este pago (si aplica)"
-    )
-    
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "inscripcion_id": "507f1f77bcf86cd799439013",
-                "concepto": "MATRICULA",
-                "numero_cuota": None,
-                "numero_transaccion": "TRX-123456789",
-                "cantidad_pago": 500.0,
-                "comprobante_url": "https://res.cloudinary.com/voucher_123.pdf",
-                "descuento_aplicado": None
+                "numero_transaccion": "BNB-2024-001234"
             }
         }
+    }
 
 
 class PaymentResponse(BaseModel):
@@ -106,7 +96,6 @@ class PaymentResponse(BaseModel):
     # Datos de transacción
     numero_transaccion: str
     cantidad_pago: float
-    descuento_aplicado: Optional[float]
     
     # Comprobante y estado
     comprobante_url: str
@@ -131,19 +120,18 @@ class PaymentResponse(BaseModel):
                 "inscripcion_id": "507f1f77bcf86cd799439013",
                 "estudiante_id": "507f1f77bcf86cd799439011",
                 "curso_id": "507f1f77bcf86cd799439012",
-                "concepto": "MATRICULA",
+                "concepto": "Matrícula",
                 "numero_cuota": None,
-                "numero_transaccion": "TRX-123456789",
-                "cantidad_pago": 500.0,
-                "descuento_aplicado": None,
-                "comprobante_url": "https://res.cloudinary.com/voucher_123.pdf",
+                "numero_transaccion": "BNB-2024-001234",
+                "cantidad_pago": 600.0,
+                "comprobante_url": "https://res.cloudinary.com/kyc/voucher_2024_001234.pdf",
                 "estado_pago": "pendiente",
-                "fecha_subida": "2024-12-11T11:00:00",
+                "fecha_subida": "2024-12-15T14:30:00",
                 "fecha_verificacion": None,
                 "verificado_por": None,
                 "motivo_rechazo": None,
-                "created_at": "2024-12-11T11:00:00",
-                "updated_at": "2024-12-11T11:00:00"
+                "created_at": "2024-12-15T14:30:00",
+                "updated_at": "2024-12-15T14:30:00"
             }
         }
     }
@@ -170,13 +158,13 @@ class PaymentUpdate(BaseModel):
         description="Motivo de rechazo (si se rechaza)"
     )
     
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
-                "estado_pago": "aprobado",
-                "motivo_rechazo": None
+                "estado_pago": "aprobado"
             }
         }
+    }
 
 
 class PaymentApproval(BaseModel):
@@ -191,12 +179,13 @@ class PaymentApproval(BaseModel):
         description="Username del admin que aprueba"
     )
     
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
-                "admin_username": "admin1"
+                "admin_username": "admin.sistemas"
             }
         }
+    }
 
 
 class PaymentRejection(BaseModel):
@@ -217,13 +206,13 @@ class PaymentRejection(BaseModel):
         description="Razón del rechazo"
     )
     
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
-                "admin_username": "admin1",
-                "motivo": "El voucher está ilegible, por favor suba uno de mejor calidad"
+                "motivo": "El comprobante está borroso, no se puede leer el número de transacción. Por favor suba una imagen más clara."
             }
         }
+    }
 
 
 class PaymentWithDetails(PaymentResponse):
@@ -255,27 +244,26 @@ class PaymentWithDetails(PaymentResponse):
                 "_id": "507f1f77bcf86cd799439014",
                 "inscripcion_id": "507f1f77bcf86cd799439013",
                 "estudiante_id": "507f1f77bcf86cd799439011",
-                "estudiante_nombre": "Juan Pérez",
-                "estudiante_email": "juan@email.com",
+                "estudiante_nombre": "María Fernanda López García",
+                "estudiante_email": "maria.lopez@estudiante.edu.bo",
                 "curso_id": "507f1f77bcf86cd799439012",
-                "curso_nombre": "Diplomado en Ciencia de Datos",
-                "curso_codigo": "DIPL-2024-001",
-                "concepto": "MATRICULA",
-                "numero_cuota": None,
-                "numero_transaccion": "TRX-123456789",
-                "cantidad_pago": 500.0,
-                "descuento_aplicado": None,
-                "comprobante_url": "https://res.cloudinary.com/voucher_123.pdf",
+                "curso_nombre": "Diplomado en Sistemas de Gestión de Calidad",
+                "curso_codigo": "DIP-SGC-2024",
+                "concepto": "Cuota 1",
+                "numero_cuota": 1,
+                "numero_transaccion": "BNB-2024-002567",
+                "cantidad_pago": 478.5,
+                "comprobante_url": "https://res.cloudinary.com/kyc/voucher_2024_002567.pdf",
                 "estado_pago": "aprobado",
-                "fecha_subida": "2024-12-11T11:00:00",
-                "fecha_verificacion": "2024-12-11T12:00:00",
-                "verificado_por": "admin1",
+                "fecha_subida": "2024-12-16T10:00:00",
+                "fecha_verificacion": "2024-12-16T11:30:00",
+                "verificado_por": "admin.sistemas",
                 "motivo_rechazo": None,
-                "enrollment_total_a_pagar": 2565.0,
-                "enrollment_total_pagado": 500.0,
-                "enrollment_saldo_pendiente": 2065.0,
-                "created_at": "2024-12-11T11:00:00",
-                "updated_at": "2024-12-11T12:00:00"
+                "enrollment_total_a_pagar": 2992.5,
+                "enrollment_total_pagado": 1078.5,
+                "enrollment_saldo_pendiente": 1914.0,
+                "created_at": "2024-12-16T10:00:00",
+                "updated_at": "2024-12-16T11:30:00"
             }
         }
     }

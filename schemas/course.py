@@ -71,30 +71,31 @@ class CourseCreate(BaseModel):
         description="Lista de requisitos que debe cumplir el estudiante al inscribirse"
     )
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
-                "codigo": "DIPL-2024-001",
-                "nombre_programa": "Diplomado en Ciencia de Datos",
+                "codigo": "DIP-SGC-2024",
+                "nombre_programa": "Diplomado en Sistemas de Gestión de Calidad ISO 9001:2015",
                 "tipo_curso": "diplomado",
-                "modalidad": "híbrido",
-                "costo_total_interno": 3000.0,
-                "matricula_interno": 500.0,
-                "costo_total_externo": 5000.0,
-                "matricula_externo": 500.0,
+                "modalidad": "hibrido",
+                "costo_total_interno": 3500.0,
+                "matricula_interno": 600.0,
+                "costo_total_externo": 4500.0,
+                "matricula_externo": 700.0,
                 "cantidad_cuotas": 5,
-                "descuento_curso": 10.0,
-                "observacion": "Incluye certificación internacional",
-                "fecha_inicio": "2024-03-01T00:00:00",
-                "fecha_fin": "2024-08-31T00:00:00",
-                "activo": True,
+                "descuento_id": "507f1f77bcf86cd799439077",
+                "observacion": "Incluye materiales didácticos y certificación internacional",
+                "fecha_inicio": "2024-03-15T00:00:00",
+                "fecha_fin": "2024-09-30T00:00:00",
+                "activo": true,
                 "requisitos": [
-                    {"descripcion": "CV actualizado (máximo 2 años)"},
-                    {"descripcion": "Fotocopia de carnet de identidad"},
-                    {"descripcion": "Título profesional o certificado de egreso"}
+                    {"descripcion": "Curriculum Vitae actualizado"},
+                    {"descripcion": "Fotocopia de Cédula de Identidad (ambos lados)"},
+                    {"descripcion": "Título profesional en provisión nacional o certificado de egreso"}
                 ]
             }
         }
+    }
 
 
 class CourseResponse(BaseModel):
@@ -145,27 +146,28 @@ class CourseResponse(BaseModel):
         "json_schema_extra": {
             "example": {
                 "_id": "507f1f77bcf86cd799439012",
-                "codigo": "DIPL-2024-001",
-                "nombre_programa": "Diplomado en Ciencia de Datos",
+                "codigo": "DIP-SGC-2024",
+                "nombre_programa": "Diplomado en Sistemas de Gestión de Calidad ISO 9001:2015",
                 "tipo_curso": "diplomado",
-                "modalidad": "híbrido",
-                "costo_total_interno": 3000.0,
-                "matricula_interno": 500.0,
-                "costo_total_externo": 5000.0,
-                "matricula_externo": 500.0,
+                "modalidad": "hibrido",
+                "costo_total_interno": 3500.0,
+                "matricula_interno": 600.0,
+                "costo_total_externo": 4500.0,
+                "matricula_externo": 700.0,
                 "cantidad_cuotas": 5,
+                "descuento_id": "507f1f77bcf86cd799439077",
                 "descuento_curso": 10.0,
-                "observacion": "Incluye certificación internacional",
-                "inscritos": [],
-                "fecha_inicio": "2024-03-01T00:00:00",
-                "fecha_fin": "2024-08-31T00:00:00",
-                "activo": True,
+                "observacion": "Incluye materiales didácticos y certificación internacional",
+                "inscritos": ["507f1f77bcf86cd799439011"],
+                "fecha_inicio": "2024-03-15T00:00:00",
+                "fecha_fin": "2024-09-30T00:00:00",
+                "activo": true,
                 "requisitos": [
-                    {"descripcion": "CV actualizado"},
-                    {"descripcion": "Fotocopia de carnet"}
+                    {"descripcion": "Curriculum Vitae actualizado"},
+                    {"descripcion": "Fotocopia de Cédula de Identidad"}
                 ],
-                "created_at": "2024-01-15T10:30:00",
-                "updated_at": "2024-01-15T10:30:00"
+                "created_at": "2024-02-01T10:30:00",
+                "updated_at": "2024-02-01T10:30:00"
             }
         }
     }
@@ -205,14 +207,15 @@ class CourseUpdate(BaseModel):
     
     requisitos: Optional[List[RequisitoTemplateCreate]] = None
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
-                "nombre_programa": "Diplomado en Ciencia de Datos e IA",
-                "descuento_curso": 15.0,
-                "activo": True
+                "nombre_programa": "Diplomado en Sistemas de Gestión de Calidad ISO 9001:2015 y 14001:2015",
+                "costo_total_interno": 3800.0,
+                "activo": true
             }
         }
+    }
 
 
 # ============================================================================
