@@ -201,14 +201,20 @@ async def list_payments(
     
     else:
         raise HTTPException(status_code=403, detail="No autorizado")
-
+    
     # Calcular metadatos comunes
     total_pages = math.ceil(total_count / per_page) if total_count > 0 else 0
     has_next = page < total_pages
     has_prev = page > 1
     
+    # ✅ ENRIQUECER PAGOS con datos legibles (nombre estudiante, progreso, etc.)
+    enriched_payments = []
+    for payment in payments:
+        enriched = await payment_service.enrich_payment_with_details(payment)
+        enriched_payments.append(enriched)
+    
     return {
-        "data": payments,
+        "data": enriched_payments,
         "meta": PaginationMeta(
             page=page,
             limit=per_page,

@@ -93,13 +93,65 @@ class PaymentResponse(BaseModel):
     estudiante_id: PyObjectId
     curso_id: PyObjectId
     
-    # Tipo de pago
-    concepto: str
-    numero_cuota: Optional[int]
+    # ========================================================================
+    # DATOS LEGIBLES (como en el reporte Excel)
+    # ========================================================================
     
-    # Datos de transacción
-    numero_transaccion: str
-    cantidad_pago: float
+    # Información del estudiante
+    nombre_estudiante: Optional[str] = Field(
+        None,
+        description="Nombre completo del estudiante"
+    )
+    
+    # Información del pago
+    fecha: str = Field(
+        ...,
+        description="Fecha de subida formateada (YYYY-MM-DD HH:MM:SS)"
+    )
+    
+    moneda: str = Field(
+        default="Bs",
+        description="Moneda del pago (siempre Bolivianos)"
+    )
+    
+    monto: float = Field(
+        ...,
+        description="Monto del pago en bolivianos"
+    )
+    
+    concepto: str = Field(
+        ...,
+        description="Concepto del pago (Matrícula, Cuota 1, etc.)"
+    )
+    
+    numero_transaccion: str = Field(
+        ...,
+        description="Número de transacción bancaria"
+    )
+    
+    estado: str = Field(
+        ...,
+        description="Estado del pago (pendiente/aprobado/rechazado)"
+    )
+    
+    progreso: Optional[str] = Field(
+        None,
+        description="Progreso de pagos del enrollment (ej: 3/12)"
+    )
+    
+    # ========================================================================
+    # CAMPOS TÉCNICOS ADICIONALES
+    # ========================================================================
+    
+    numero_cuota: Optional[int] = Field(
+        None,
+        description="Número de cuota (si aplica)"
+    )
+    
+    cantidad_pago: float = Field(
+        ...,
+        description="Monto del pago (mismo que 'monto', para compatibilidad)"
+    )
     
     # Comprobante y estado
     comprobante_url: str
@@ -124,9 +176,15 @@ class PaymentResponse(BaseModel):
                 "inscripcion_id": "507f1f77bcf86cd799439013",
                 "estudiante_id": "507f1f77bcf86cd799439011",
                 "curso_id": "507f1f77bcf86cd799439012",
+                "nombre_estudiante": "María Fernanda López García",
+                "fecha": "2024-12-15 14:30:00",
+                "moneda": "Bs",
+                "monto": 600.0,
                 "concepto": "Matrícula",
-                "numero_cuota": None,
                 "numero_transaccion": "BNB-2024-001234",
+                "estado": "pendiente",
+                "progreso": "0/12",
+                "numero_cuota": None,
                 "cantidad_pago": 600.0,
                 "comprobante_url": "https://res.cloudinary.com/kyc/voucher_2024_001234.pdf",
                 "estado_pago": "pendiente",

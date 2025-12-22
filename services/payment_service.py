@@ -23,6 +23,57 @@ from beanie import PydanticObjectId
 from services import enrollment_service
 
 
+async def enrich_payment_with_details(payment: Payment) -> dict:
+    """
+    Enriquecer un pago con datos legibles para la API
+    
+    Agrega campos como nombre_estudiante, fecha, moneda, monto, estado, progreso
+    (los mismos que el reporte Excel)
+    
+    Args:
+        payment: Objeto Payment de la base de datos
+    
+    Returns:
+        dict con todos los campos del Payment + campos enriquecidos
+    """
+    # Convertir Payment a dict
+    payment_dict = payment.model_dump(by_alias=True)
+    
+    # 1. Obtener nombre del estudiante
+    student = await Student.get(payment.estudiante_id)
+    nombre_estudiante = student.nombre if student and student.nombre else "Sin nombre"
+    
+    # 2. Formatear fecha
+    fecha = payment.fecha_subida.strftime("%Y-%m-%d %H:%M:%S") if payment.fecha_subida else ""
+    
+    # 3. Calcular progreso (cuotas pagadas / cuotas totales)
+    progreso = ""
+    try:
+        enrollment = await enrollment_service.get_enrollment(payment.inscripcion_id)
+        if enrollment and enrollment.cuotas_pagadas_info:
+            cuotas_pagadas = enrollment.cuotas_pagadas_info.get("cuotas_pagadas", 0)
+            cuotas_totales = enrollment.cuotas_pagadas_info.get("cuotas_totales", 0)
+            progreso = f"{cuotas_pagadas}/{cuotas_totales}"
+        elif enrollment:
+            progreso = f"0/{enrollment.cantidad_cuotas}"
+    except:
+        progreso = ""
+    
+    # 4. Agregar campos enriquecidos
+    payment_dict.update({
+        # Datos legibles (mismos que reporte Excel)
+        "nombre_estudiante": nombre_estudiante,
+        "fecha": fecha,
+        "moneda": "Bs",
+        "monto": payment.cantidad_pago,
+        "estado": payment.estado_pago.value if payment.estado_pago else "",
+        "progreso": progreso,
+    })
+    
+    return payment_dict
+
+
+
 async def create_payment(
     payment_in: PaymentCreate,
     student_id: PydanticObjectId
