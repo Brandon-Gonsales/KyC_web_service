@@ -542,10 +542,8 @@ async def generar_reporte_excel_pagos(
         
         # Preparar fila
         # Ajustar fecha a hora boliviana (UTC-4)
-        fecha_bolivia = ""
-        if payment.fecha_subida:
-            fecha_bolivia_dt = payment.fecha_subida - timedelta(hours=4)
-            fecha_bolivia = fecha_bolivia_dt.strftime("%Y-%m-%d %H:%M:%S")
+        from core.timezone_utils import to_bolivia_time
+        fecha_bolivia = to_bolivia_time(payment.fecha_subida)
 
         row = [
             nombre_estudiante,

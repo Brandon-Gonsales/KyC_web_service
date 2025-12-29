@@ -132,6 +132,28 @@ async def create_enrollment(enrollment_in: EnrollmentCreate, admin_username: str
     return enrollment
 
 
+async def enrich_enrollment_dates(enrollment: Enrollment) -> dict:
+    """
+    Enriquecer enrollment con fechas convertidas a hora boliviana
+    
+    Args:
+        enrollment: Objeto Enrollment
+    
+    Returns:
+        Diccionario con fechas en hora boliviana (UTC-4)
+    """
+    from core.timezone_utils import to_bolivia_time
+    
+    enrollment_dict = enrollment.model_dump()
+    
+    # Convertir fechas a hora boliviana
+    enrollment_dict["fecha_inscripcion"] = to_bolivia_time(enrollment.fecha_inscripcion)
+    enrollment_dict["created_at"] = to_bolivia_time(enrollment.created_at)
+    enrollment_dict["updated_at"] = to_bolivia_time(enrollment.updated_at)
+    
+    return enrollment_dict
+
+
 async def get_enrollment(id: PydanticObjectId) -> Optional[Enrollment]:
     """Obtener una inscripción por ID"""
     return await Enrollment.get(id)

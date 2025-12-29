@@ -86,7 +86,9 @@ async def create_enrollment(
             enrollment_in=enrollment_in,
             admin_username=current_user.username
         )
-        return enrollment
+        # Convertir fechas a hora boliviana
+        enriched_enrollment = await enrollment_service.enrich_enrollment_dates(enrollment)
+        return enriched_enrollment
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -181,8 +183,14 @@ async def list_enrollments(
     has_next = page < total_pages
     has_prev = page > 1
     
+    # Convertir fechas a hora boliviana
+    enriched_enrollments = []
+    for enrollment in enrollments:
+        enriched = await enrollment_service.enrich_enrollment_dates(enrollment)
+        enriched_enrollments.append(enriched)
+    
     return {
-        "data": enrollments,
+        "data": enriched_enrollments,
         "meta": PaginationMeta(
             page=page,
             limit=per_page,
@@ -238,7 +246,9 @@ async def get_enrollment(
                 detail="No tienes permiso para ver esta inscripción"
             )
     
-    return enrollment
+    # Convertir fechas a hora boliviana
+    enriched_enrollment = await enrollment_service.enrich_enrollment_dates(enrollment)
+    return enriched_enrollment
 
 
 @router.patch(

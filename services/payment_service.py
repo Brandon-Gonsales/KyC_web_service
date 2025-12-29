@@ -43,12 +43,12 @@ async def enrich_payment_with_details(payment: Payment) -> dict:
     student = await Student.get(payment.estudiante_id)
     nombre_estudiante = student.nombre if student and student.nombre else "Sin nombre"
     
-    # 2. Formatear fecha (Hora Boliviana UTC-4)
-    from datetime import timedelta
-    fecha = ""
-    if payment.fecha_subida:
-        fecha_bolivia = payment.fecha_subida - timedelta(hours=4)
-        fecha = fecha_bolivia.strftime("%Y-%m-%d %H:%M:%S")
+    # 2. Formatear fechas a hora boliviana (UTC-4)
+    from core.timezone_utils import to_bolivia_time
+    
+    fecha = to_bolivia_time(payment.fecha_subida)
+    created_at_bolivia = to_bolivia_time(payment.created_at)
+    updated_at_bolivia = to_bolivia_time(payment.updated_at)
     
     # 3. Calcular total de cuotas
     total_cuotas = 0
@@ -67,7 +67,10 @@ async def enrich_payment_with_details(payment: Payment) -> dict:
         "moneda": "Bs",
         "monto": payment.cantidad_pago,
         "estado": payment.estado_pago.value if payment.estado_pago else "",
-        "total_cuotas": total_cuotas
+        "total_cuotas": total_cuotas,
+        # Campos de auditoría en hora boliviana
+        "created_at": created_at_bolivia,
+        "updated_at": updated_at_bolivia
     })
     
     return payment_dict
