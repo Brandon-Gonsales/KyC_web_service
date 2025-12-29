@@ -80,8 +80,8 @@ async def get_students(
     # Calcular skip
     skip = (page - 1) * per_page
     
-    # Ejecutar consulta con paginación
-    students = await query.skip(skip).limit(per_page).to_list()
+    # Ejecutar consulta con paginación (ordenar por más reciente primero)
+    students = await query.sort("-created_at").skip(skip).limit(per_page).to_list()
     
     return students, total_count
 

@@ -64,7 +64,7 @@ async def get_courses(
     
     total_count = await query.count()
     skip = (page - 1) * per_page
-    courses = await query.skip(skip).limit(per_page).to_list()
+    courses = await query.sort("-created_at").skip(skip).limit(per_page).to_list()
     return courses, total_count
 
 async def create_course(course_in: CourseCreate) -> Course:

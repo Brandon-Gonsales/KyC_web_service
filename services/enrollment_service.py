@@ -238,7 +238,7 @@ async def get_all_enrollments(
     total_count = await query.count()
     skip = (page - 1) * per_page
     
-    enrollments = await query.skip(skip).limit(per_page).to_list()
+    enrollments = await query.sort("-fecha_inscripcion").skip(skip).limit(per_page).to_list()
     return enrollments, total_count
 
 

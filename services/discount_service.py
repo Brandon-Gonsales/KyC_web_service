@@ -16,7 +16,7 @@ async def get_discounts(page: int = 1, per_page: int = 10) -> tuple[List[Discoun
     query = Discount.find_all()
     total_count = await query.count()
     skip = (page - 1) * per_page
-    discounts = await query.skip(skip).limit(per_page).to_list()
+    discounts = await query.sort("-created_at").skip(skip).limit(per_page).to_list()
     return discounts, total_count
 
 

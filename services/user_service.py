@@ -19,7 +19,7 @@ async def get_users(page: int = 1, per_page: int = 10) -> tuple[List[User], int]
     query = User.find_all()
     total_count = await query.count()
     skip = (page - 1) * per_page
-    users = await query.skip(skip).limit(per_page).to_list()
+    users = await query.sort("-created_at").skip(skip).limit(per_page).to_list()
     return users, total_count
 
 
